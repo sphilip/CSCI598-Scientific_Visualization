@@ -11,11 +11,15 @@ CSCI 598
 #include "image.h"
 
 using namespace std;
+/** Global Variables **/
+string binaryFile; // name of raw file
+double x,y,z; // dimensions of file
 
+/** Open txt file and save the descriptors **/
 void parseFile(char* filename)
 {
 
-  ifstream infile(filename);
+  ifstream infile(filename, ios::binary | ios::in);
   if (!infile)
   {
     cout << "Couldn't open file " << filename << endl;
@@ -24,6 +28,11 @@ void parseFile(char* filename)
 
   else
   {
+    infile >> binaryFile;
+    infile >> x >> y >> z;
+
+    cout << "got  " << binaryFile << x << y << z << endl;
+
   }
 
   return;
@@ -33,7 +42,7 @@ int main(int argc, char** argv)
 {
   if (argc < 2)
   {
-    cout << "To execute, must include images\n\t" << argv[0] << "list of images\n";
+    cout << "To execute, must include images\n\t./" << argv[0] << "list of images (must be .txt format) \n";
   }
 
 else
