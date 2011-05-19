@@ -50,7 +50,7 @@ void image::scale()
 
 /* ----------------------- */
 // Save image to ppm
-void image::save_to_ppm_file ( char *filename )
+void image::save_to_ppm_file (const char *filename )
 {
   ofstream ofs(filename,ios::binary);
   assert(ofs);
