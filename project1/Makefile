@@ -2,14 +2,11 @@ GCC = g++
 CFLAGS = -O0
 LIBS = -lm -ggdb
 SOURCES = raytrace.cpp image.cpp
-HEADERS = image.h RGB.h
+HEADERS = image.h RGB.h Vector.h
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = volume
 
 all: $(SOURCES) $(EXECUTABLE)
-
-# $(SOURCES):
-# 	$(GCC) $(CFLAGS) $(OBJECTS) $(HEADERS) -o $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECTS)
 	$(GCC) $(CFLAGS) $(OBJECTS) $(HEADERS) -o $@
