@@ -9,7 +9,7 @@ EXECUTABLE= painterly
 all: $(SOURCE) $(EXECUTABLE)
 
 $(EXECUTABLE): $(OBJECT)
-	$(GCC) $(FLAGS) $(OBJECT) -o $@
+	$(GCC) $(FLAGS) $(OBJECT) $(HEADER) -o $@
 
 .cpp.o:
 	$(GCC) $(CFLAGS) -c $< -o $@ $(LIBS)
