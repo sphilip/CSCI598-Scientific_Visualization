@@ -11,9 +11,12 @@ class image
     RGB *rgb;        // pixel intensities
 
   public:
+    image();
     image (int m, int n);// allocates image of specified size
     RGB &pixel ( int i, int j );  // access to a specific pixel
     void save_to_ppm_file (const char *filename );
     void scale();
+
+
 };
 

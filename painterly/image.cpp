@@ -5,6 +5,14 @@
 #include "image.h"
 /* ----------- image class: methods ---------- */
 // Constructor for image
+image::image ()
+{
+  xsize = 0;
+  ysize = 0;
+}
+
+
+
 image::image ( int m, int n ) : xsize(m), ysize(n)
 {
   rgb = new RGB[m*n];
