@@ -14,53 +14,134 @@ CSCI 598
 
 using namespace std;
 
+/** Struct defining the dimensions of 1 side of a box **/
+struct Square
+{
+  Vector p,q,r,s;
+  Vector normal;
+  string name;
+};
+
+/** Details of the box enclosing the object **/
+struct BoundingBox
+{
+  Square face[6];
+  double t[6];
+} bbox;
+
+/** Ray -- self explanatory  **/
+struct Ray
+{
+  Vector origin, direction;
+};
+
 /** Global Variables **/
 string binaryFile; // name of raw file
 double x,y,z; // dimensions of raw file
 int dimX, dimY;  // dimensions of output file
 int* map = NULL; // holds the pixel values of image
-Vector camera;
 
-struct Square
+Vector lower_left = Vector(); // the lower left corner is always the origin;
+Vector horizontal; // which direction is the horizontal pointing
+Vector vertical; // which direction is the vertical pointing
+Ray eye; // eye ray has origin @ center of cube and scans the entire cube (hence, direction changes)
+
+int step_size; //  the distance between voxels to render the output image
+
+/** Calculate cross product from 2 given vectors) **/
+Vector cross(const Vector& a, const Vector& b)
 {
-  Vector p,q,r,s;
-};
+  Vector result;
+  result.x = (a.y * b.z) - (a.z * b.y);
+  result.y = (a.z * b.x) - (a.x * b.z);
+  result.z = (a.x * b.y) - (a.y * b.x);
 
-struct BoundingBox
+  return result;
+}
+
+/** Find dot product **/
+double dot(const Vector& a, const Vector& b)
 {
-  Square front,back,left,right,top,bottom;
-} bbox;
+  return (a.x*b.x) + (a.y*b.y) + (a.z*b.z);
+}
 
 
+/** Find the intersection between the eye ray & a given face of the bounding box **/
+double ray_plane_intersection(Square face)
+{
+  // when ray and pt on plane intersects,
+  //     p = o + td  pt = origin + t*direction
+  //     hence: (p-o)/d = t
+  Vector po = face.p - eye.origin; // p-o
+  Vector pq = face.q - face.p;
+  Vector pr = face.r - face.p;
+  face.normal = cross(pq, pr).normalize(); // normal faces into cube
+
+  double num = dot(po, face.normal);
+  double denom = dot(eye.direction, face.normal);
+
+  double t = -num/denom; // account for reversal of direction of normal
+
+  if (t < 0)
+    return -1;
+
+  else
+  {
+    Vector pt = eye.origin + (eye.direction*t);
+    if (pt < face.p && pt < face.q && pt < face.r && pt < face.s)
+    {
+
+    }
+
+    else return -1;
+    return t;
+  }
+
+
+
+
+}
+
+
+/** Calculate direction that the eye ray is pointing **/
+void calculateDirection(int i, int j)
+{
+  eye.direction.x = (((i+0.5)*horizontal.x)/dimX) + (((j+0.5)*vertical.x)/dimY);
+  eye.direction.y = (((i+0.5)*horizontal.y)/dimX) + (((j+0.5)*vertical.y)/dimY);
+  eye.direction.z = (((i+0.5)*horizontal.z)/dimX) + (((j+0.5)*vertical.z)/dimY);
+}
 /** Setup the dimensions of the bounding box **/
 void defineBox()
 {
   // front face
   Square front;
+  front.name = "front";
   front.p = Vector(0,0,0); // origin
   front.q = Vector(x,0,0); // along x
   front.r = Vector(0,y,0); // along y
   front.s = Vector(x,y,0); // along x,y
-  bbox.front = front;
+  bbox.face[0] = front;
 
   // back face --
   //   same thing as front but translated along z
   Square back;
+  back.name = "back";
   back.p = Vector(0,0,z); // origin
   back.q = Vector(x,0,z); // along x
   back.r = Vector(0,y,z); // along y
   back.s = Vector(x,y,z); // along x,y
-  bbox.back = back;
+  bbox.face[1] = back;
 
   // left face --
   //   p of left face = q of front;
   //   s of left = s of back
   Square left;
+  left.name = "left";
   left.p = Vector(x,0,0); // origin
   left.q = Vector(x,0,z); // along z
   left.r = Vector(x,y,0); // along y
   left.s = Vector(x,y,z); // along z,y
-  bbox.left = left;
+  bbox.face[2] = left;
 
   // right face --
   //   p of right face = q of back;
@@ -68,11 +149,12 @@ void defineBox()
   //   r of right = s of back
   //   s of right = r of front
   Square right;
+  right.name = "right";
   right.p = Vector(0,0,z); // origin
   right.q = Vector(0,0,0); // along z
   right.r = Vector(0,y,z); // along y
   right.s = Vector(0,y,0); // along z,y
-  bbox.right = right;
+  bbox.face[3] = right;
 
   // top face --
   //   p of top face = r of front;
@@ -80,11 +162,12 @@ void defineBox()
   //   r of top = r of back
   //   s of top = s of back
   Square top;
+  top.name = "top";
   top.p = Vector(0,y,0); // origin
   top.q = Vector(x,y,0); // along z
   top.r = Vector(0,y,z); // along y
   top.s = Vector(x,y,z); // along z,y
-  bbox.top = top;
+  bbox.face[4] = top;
 
   // bottom face --
   //   p of bottom face = p of front;
@@ -92,12 +175,12 @@ void defineBox()
   //   r of bottom = p of back
   //   s of bottom = q of back
   Square bottom;
+  bottom.name = "bottom";
   bottom.p = Vector(0,0,0); // origin
   bottom.q = Vector(x,0,0); // along z
   bottom.r = Vector(0,0,z); // along y
   bottom.s = Vector(x,0,z); // along z,y
-  bbox.bottom = bottom;
-
+  bbox.face[5] = bottom;
 }
 
 /** Read & translate binary file **/
@@ -136,7 +219,7 @@ void readBinaryFile(image* img)
 	map[i] = 255;
 
       if (map[i] < 0)
-	map[i] = 0;
+	map[i] = 255 + map[i];
 
       //       cout << map[i] << "\t";
     /*  if (i%3 == 0)
@@ -173,6 +256,10 @@ void parseFile(char* filename)
   {
     infile >> binaryFile;
     infile >> x >> y >> z;
+    infile >> step_size;
+
+    horizontal = Vector(x-1,0,0);
+    vertical = Vector(0,y-1,0);
 
     infile.close();
   }
@@ -181,7 +268,7 @@ void parseFile(char* filename)
 }
 
 
-/** Extract the name of the output image from the input name **/
+/** Extract the name of the output image from the input name.  Save as dir/filename.ppm **/
 string extractOutputName(char* input)
 {
   string temp = string(input);
@@ -210,22 +297,48 @@ int main(int argc, char** argv)
   if (argc < 3)
   {
     cout << "To execute, must include the image description file\n\t" << argv[0] << "<image description (must be .txt format)> <dimensions of output image>\n";
+    return -1;
   }
 
-  else
+  cout << "Reading " << argv[1] << endl;
+  dimX = atoi(argv[2]);
+  dimY = atoi(argv[3]);
+  image img = image(dimX,dimY);
+
+  // Get name for output image from input name
+  string temp = string(argv[1]);
+  string outputFile;
+  for (int i=0; i<temp.length(); i++)
   {
-    cout << "Reading " << argv[1] << endl;
-    dimX = atoi(argv[2]);
-    dimY = atoi(argv[3]);
-    image img = image(dimX,dimY);
-
-    string outputFile = extractOutputName(argv[1]);
-    parseFile(argv[1]);
-    readBinaryFile(&img);
-    defineBox();
-
-    img.save_to_ppm_file(outputFile.c_str());
+    // save everything except .txt
+    if (temp[i] == '.')
+      outputFile = temp.substr(0,i);
   }
+
+  outputFile = outputFile + ".ppm";
+
+  parseFile(argv[1]);
+  readBinaryFile(&img);
+  defineBox();
+
+  // define camera position
+  eye.origin = Vector(x/2, y/2, -z/2);
+
+  // iterate through each pixel in output image
+  for (int j=0; j<dimY; j++)
+  {
+    for (int i=0; i<dimX; i++)
+    {
+      // calculate direction vector of eye ray
+      calculateDirection(i,j);
+
+      // array of possible t-values
+      double t[6];
+      for (int k=0; k<6; k++)
+	t[k] = ray_plane_intersection(bbox.face[k]);
+    }
+  }
+  img.save_to_ppm_file(outputFile.c_str());
 
   return 0;
 }
