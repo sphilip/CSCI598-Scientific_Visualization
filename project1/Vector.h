@@ -7,13 +7,13 @@ class Vector
 
     Vector();
     Vector(double a, double b, double c);
-    Vector& operator+ (const Vector& b);
-    Vector& operator- (const Vector& b);
-    Vector& operator- ();
-    Vector& operator* (double& x);
-    Vector& operator= (const Vector& b);
+    const Vector operator+ (const Vector& b) const;
+    const Vector operator- (const Vector& b) const;
+    const Vector operator- () const;
+    const Vector operator* (double& x) const;
+    Vector operator= (const Vector& b);
     double magnitude ();
-    Vector& normalize ();
+    const Vector normalize ();
     bool operator< (const Vector& b);
     bool operator<= (const Vector& b);
 };
@@ -35,59 +35,46 @@ Vector::Vector(double a, double b, double c)
 }
 
 /** Overloaded operator to add 2 vectors **/
-Vector& Vector::operator+ (const Vector& b)
+const Vector Vector::operator+ (const Vector& b) const
 {
   Vector c;
-  c.x = this->x + b.x;
-  c.y = this->y + b.y;
-  c.z = this->z + b.z;
+  c.x = (this->x + b.x);
+  c.y = (this->y + b.y);
+  c.z = (this->z + b.z);
 
-  this->x = c.x;
-  this->y = c.y;
-  this->z = c.z;
-  return *this;
+  return c;
 }
 
 /** Overloaded operator to subtract 2 vectors **/
-Vector& Vector::operator- (const Vector& b)
+const Vector Vector::operator- (const Vector& b) const
 {
   Vector c;
-  c.x = this->x - b.x;
-  c.y = this->y - b.y;
-  c.z = this->z - b.z;
+  c.x = (this->x - b.x);
+  c.y = (this->y - b.y);
+  c.z = (this->z - b.z);
 
-  this->x = c.x;
-  this->y = c.y;
-  this->z = c.z;
-  return *this;
+  return c;
 }
 
 /** Overloaded operator to negate **/
-Vector& Vector::operator- ()
+const Vector Vector::operator- () const
 {
-  this->x = -this->x;
-  this->y = -this->y;
-  this->z = -this->z;
-  return *this;
+  return Vector(-this->x,-this->y,-this->z);
 }
 
 /** Overloaded operator to scalar mult **/
-Vector& Vector::operator* (double& x)
+const Vector Vector::operator* (double& x) const
 {
   Vector c;
-  c.x = this->x * x;
-  c.y = this->y * x;
-  c.z = this->z * x;
+  c.x = (this->x * x);
+  c.y = (this->y * x);
+  c.z = (this->z * x);
 
-  this->x = c.x;
-  this->y = c.y;
-  this->z = c.z;
-
-  return *this;
+  return c;
 }
 
 /** Overloaded operator to assign vector b to this vector **/
-Vector& Vector::operator= (const Vector& b)
+Vector Vector::operator= (const Vector& b)
 {
   this->x = b.x;
   this->y = b.y;
@@ -99,16 +86,22 @@ Vector& Vector::operator= (const Vector& b)
 /** Find magnitude of this vector **/
 double Vector::magnitude()
 {
-  return (sqrt(pow(this->x,2) + pow(this->y,2) + pow(this->z,2)));
+  double power = pow(this->x,2) + pow(this->y,2) + pow(this->z,2);
+  return (sqrt(power));
 }
 
 /** Find normal vector **/
-Vector& Vector::normalize()
+const Vector Vector::normalize()
 {
+  Vector result;
   double magnitude = this->magnitude();
-  this->x = this->x*(1/magnitude);
-  this->y = this->y*(1/magnitude);
-  this->z = this->z*(1/magnitude);
+  result.x = this->x*(1/magnitude);
+  result.y = this->y*(1/magnitude);
+  result.z = this->z*(1/magnitude);
+
+  return result;
+//   *this = result;
+//   return *this;
 }
 
 bool Vector::operator< (const Vector& b)
