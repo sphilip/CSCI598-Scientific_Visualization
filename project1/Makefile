@@ -1,5 +1,5 @@
 GCC = g++
-CFLAGS = -O0
+CFLAGS = -O0 -Wall
 LIBS = -lm -ggdb
 SOURCES = raytrace.cpp image.cpp
 HEADERS = image.h RGB.h Vector.h
@@ -15,4 +15,4 @@ $(EXECUTABLE): $(OBJECTS)
 	$(GCC) $(CFLAGS) -c $< -o $@ $(LIBS)
 
 clean :
-	rm *.o volume
+	rm *.o *~ volume
