@@ -72,7 +72,7 @@ double ray_plane_intersection(Square face)
   // when ray and pt on plane intersects,
   //     p = o + td  pt = origin + t*direction
   //     hence: (p-o)/d = t
-  Vector po = face.p - eye.origin; // p-o
+  Vector po = eye.origin - face.p; // p-o
   Vector pq = face.q - face.p;
   Vector pr = face.r - face.p;
   face.normal = cross(pq, pr).normalize(); // normal faces into cube
@@ -80,7 +80,10 @@ double ray_plane_intersection(Square face)
   double num = dot(po, face.normal);
   double denom = dot(eye.direction, face.normal);
 
-  double t = -num/denom; // account for reversal of direction of normal
+  if (denom == 0)
+    return -1;
+
+  double t = -(num/denom);
 
   if (t < 0)
     return -1;
@@ -90,16 +93,11 @@ double ray_plane_intersection(Square face)
     Vector pt = eye.origin + (eye.direction*t);
     if (pt < face.p && pt < face.q && pt < face.r && pt < face.s)
     {
-
+      return t;
     }
 
     else return -1;
-    return t;
   }
-
-
-
-
 }
 
 
@@ -117,44 +115,44 @@ void defineBox()
   Square front;
   front.name = "front";
   front.p = Vector(0,0,0); // origin
-  front.q = Vector(x,0,0); // along x
-  front.r = Vector(0,y,0); // along y
-  front.s = Vector(x,y,0); // along x,y
+  front.q = Vector((x-1),0,0); // along x
+  front.r = Vector(0,(y-1),0); // along y
+  front.s = Vector((x-1),(y-1),0); // along x,y
   bbox.face[0] = front;
 
   // back face --
   //   same thing as front but translated along z
   Square back;
   back.name = "back";
-  back.p = Vector(0,0,z); // origin
-  back.q = Vector(x,0,z); // along x
-  back.r = Vector(0,y,z); // along y
-  back.s = Vector(x,y,z); // along x,y
+  back.p = Vector(0,0,(z-1)); // origin
+  back.q = Vector((x-1),0,(z-1)); // along x
+  back.r = Vector(0,(y-1),(z-1)); // along y
+  back.s = Vector((x-1),(y-1),(z-1)); // along x,(y-1)
   bbox.face[1] = back;
 
-  // left face --
-  //   p of left face = q of front;
-  //   s of left = s of back
-  Square left;
-  left.name = "left";
-  left.p = Vector(x,0,0); // origin
-  left.q = Vector(x,0,z); // along z
-  left.r = Vector(x,y,0); // along y
-  left.s = Vector(x,y,z); // along z,y
-  bbox.face[2] = left;
-
   // right face --
-  //   p of right face = q of back;
-  //   q of right = p of front
-  //   r of right = s of back
-  //   s of right = r of front
+  //   p of right face = q of front;
+  //   s of right = s of back
   Square right;
   right.name = "right";
-  right.p = Vector(0,0,z); // origin
-  right.q = Vector(0,0,0); // along z
-  right.r = Vector(0,y,z); // along y
-  right.s = Vector(0,y,0); // along z,y
-  bbox.face[3] = right;
+  right.p = Vector((x-1),0,0); // origin
+  right.q = Vector((x-1),0,(z-1)); // along z
+  right.r = Vector((x-1),(y-1),0); // along y
+  right.s = Vector((x-1),(y-1),(z-1)); // along z,y
+  bbox.face[2] = right;
+
+  // left face --
+  //   p of left face = q of back;
+  //   q of left = p of front
+  //   r of left = s of back
+  //   s of left = r of front
+  Square left;
+  left.name = "left";
+  left.p = Vector(0,0,(z-1)); // origin
+  left.q = Vector(0,0,0); // along z
+  left.r = Vector(0,(y-1),(z-1)); // along y
+  left.s = Vector(0,(y-1),0); // along z,y
+  bbox.face[3] = left;
 
   // top face --
   //   p of top face = r of front;
@@ -163,10 +161,10 @@ void defineBox()
   //   s of top = s of back
   Square top;
   top.name = "top";
-  top.p = Vector(0,y,0); // origin
-  top.q = Vector(x,y,0); // along z
-  top.r = Vector(0,y,z); // along y
-  top.s = Vector(x,y,z); // along z,y
+  top.p = Vector(0,(y-1),0); // origin
+  top.q = Vector((x-1),(y-1),0); // along z
+  top.r = Vector(0,(y-1),(z-1)); // along y
+  top.s = Vector((x-1),(y-1),(z-1)); // along z,y
   bbox.face[4] = top;
 
   // bottom face --
@@ -177,9 +175,9 @@ void defineBox()
   Square bottom;
   bottom.name = "bottom";
   bottom.p = Vector(0,0,0); // origin
-  bottom.q = Vector(x,0,0); // along z
-  bottom.r = Vector(0,0,z); // along y
-  bottom.s = Vector(x,0,z); // along z,y
+  bottom.q = Vector((x-1),0,0); // along z
+  bottom.r = Vector(0,0,(z-1)); // along y
+  bottom.s = Vector((x-1),0,(z-1)); // along z,y
   bbox.face[5] = bottom;
 }
 
@@ -261,6 +259,8 @@ void parseFile(char* filename)
     horizontal = Vector(x-1,0,0);
     vertical = Vector(0,y-1,0);
 
+    // define camera position
+    eye.origin = Vector(x/2, y/2, -z/2);
     infile.close();
   }
 
@@ -273,7 +273,7 @@ string extractOutputName(char* input)
 {
   string temp = string(input);
   string output;
-  for (int i=0; i<temp.length(); i++)
+  for (unsigned int i=0; i<temp.length(); i++)
   {
     if (temp[i] == '.')
       output = temp.substr(0,i);
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
   // Get name for output image from input name
   string temp = string(argv[1]);
   string outputFile;
-  for (int i=0; i<temp.length(); i++)
+  for (unsigned int i=0; i<temp.length(); i++)
   {
     // save everything except .txt
     if (temp[i] == '.')
@@ -321,8 +321,6 @@ int main(int argc, char** argv)
   readBinaryFile(&img);
   defineBox();
 
-  // define camera position
-  eye.origin = Vector(x/2, y/2, -z/2);
 
   // iterate through each pixel in output image
   for (int j=0; j<dimY; j++)
@@ -333,12 +331,29 @@ int main(int argc, char** argv)
       calculateDirection(i,j);
 
       // array of possible t-values
-      double t[6];
+      double* t = new double[6];
       for (int k=0; k<6; k++)
 	t[k] = ray_plane_intersection(bbox.face[k]);
+
+      // min & max possible t for intersections between bounding box & eye ray
+      double min_t(99999.09), max_t(-1);
+
+      for (int k=0; k<6; k++)
+      {
+	if (t[k] < min_t)
+	  min_t = t[k];
+
+	if (max_t > t[k])
+	  max_t = t[k];
+      }
+
+      delete[] t;
+
+      cout << "At (" << i << ", " << j << "): " << min_t << "\t" << max_t << endl;
     }
   }
-  img.save_to_ppm_file(outputFile.c_str());
+
+//   img.save_to_ppm_file(outputFile.c_str());
 
   return 0;
 }
