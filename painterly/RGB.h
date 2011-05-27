@@ -19,5 +19,7 @@ class RGB
       this->r = newColor.r;
       this->g = newColor.g;
       this->b = newColor.b;
+
+      return *this;
     }
 };
