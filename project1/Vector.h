@@ -16,6 +16,8 @@ class Vector
     const Vector normalize ();
     bool operator< (const Vector& b);
     bool operator<= (const Vector& b);
+    bool operator> (const Vector& b);
+    bool operator>= (const Vector& b);
 };
 
 /** Default construct, initialize to 0 **/
@@ -100,13 +102,12 @@ const Vector Vector::normalize()
   result.z = this->z*(1/magnitude);
 
   return result;
-//   *this = result;
-//   return *this;
 }
 
+/** Overloaded inequalities **/
 bool Vector::operator< (const Vector& b)
 {
-  if (this->x < b.x && this->y < b.y && this->z < b.z)
+  if (this->x < b.x || this->y < b.y || this->z < b.z)
     return true;
 
   else return false;
@@ -114,8 +115,43 @@ bool Vector::operator< (const Vector& b)
 
 bool Vector::operator<= (const Vector& b)
 {
-  if (this->x <= b.x && this->y <= b.y && this->z <= b.z)
+  if (this->x <= b.x || this->y <= b.y || this->z <= b.z)
     return true;
 
   else return false;
 }
+
+
+bool Vector::operator> (const Vector& b)
+{
+  if (this->x > b.x || this->y > b.y || this->z > b.z)
+    return true;
+
+  else return false;
+}
+
+bool Vector::operator>= (const Vector& b)
+{
+  if (this->x >= b.x || this->y >= b.y || this->z >= b.z)
+    return true;
+
+  else return false;
+}
+
+/** Calculate cross product from 2 given vectors) **/
+Vector cross(const Vector& a, const Vector& b)
+{
+  Vector result;
+  result.x = (a.y * b.z) - (a.z * b.y);
+  result.y = (a.z * b.x) - (a.x * b.z);
+  result.z = (a.x * b.y) - (a.y * b.x);
+
+  return result;
+}
+
+/** Find dot product **/
+double dot(const Vector& a, const Vector& b)
+{
+  return (a.x*b.x) + (a.y*b.y) + (a.z*b.z);
+}
+
