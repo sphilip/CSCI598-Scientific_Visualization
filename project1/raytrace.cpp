@@ -41,31 +41,34 @@ double x,y,z; // dimensions of raw file
 int dimX, dimY;  // dimensions of output file
 int* map = NULL; // holds the pixel values of image
 
-Vector lower_left = Vector(); // the lower left corner is always the origin;
+Vector lower_left; // the lower left corner is always the origin;
 Vector horizontal; // which direction is the horizontal pointing
 Vector vertical; // which direction is the vertical pointing
 Ray eye; // eye ray has origin @ center of cube and scans the entire cube (hence, direction changes)
 
 int step_size; //  the distance between voxels to render the output image
+double ka,kd,ks; // coefficients for calculating illumination
+double init_I; // initial intensity
+double alpha_i // initial opacity
+Vector light; // location of light source
 
-/** Calculate cross product from 2 given vectors) **/
-Vector cross(const Vector& a, const Vector& b)
+
+/** Take samples from min to max t (ie. front to back) and return the total intensity. **/
+double front_to_back_compositing(double mint, double maxt)
 {
-  Vector result;
-  result.x = (a.y * b.z) - (a.z * b.y);
-  result.y = (a.z * b.x) - (a.x * b.z);
-  result.z = (a.x * b.y) - (a.y * b.x);
+  double alpha = 1.0;
+  double final_I = 0.0;
 
-  return result;
+  int steps = (maxt - mint)/step_size;
+  for (int step=0; step<steps; step++)
+  {
+    final_I = final_I + (alpha*init_I);
+    alpha = alpha*(1-alpha_i);
+
+    cout << alpha << "\t" << final_I << "\t" << steps << endl;
+  }
+  return;
 }
-
-/** Find dot product **/
-double dot(const Vector& a, const Vector& b)
-{
-  return (a.x*b.x) + (a.y*b.y) + (a.z*b.z);
-}
-
-
 /** Find the intersection between the eye ray & a given face of the bounding box **/
 double ray_plane_intersection(Square face)
 {
@@ -91,7 +94,7 @@ double ray_plane_intersection(Square face)
   else
   {
     Vector pt = eye.origin + (eye.direction*t);
-    if (pt < face.p && pt < face.q && pt < face.r && pt < face.s)
+    if (pt >= face.p && pt <= face.q && pt >= face.r && pt <= face.s)
     {
       return t;
     }
@@ -104,9 +107,9 @@ double ray_plane_intersection(Square face)
 /** Calculate direction that the eye ray is pointing **/
 void calculateDirection(int i, int j)
 {
-  eye.direction.x = (((i+0.5)*horizontal.x)/dimX) + (((j+0.5)*vertical.x)/dimY);
-  eye.direction.y = (((i+0.5)*horizontal.y)/dimX) + (((j+0.5)*vertical.y)/dimY);
-  eye.direction.z = (((i+0.5)*horizontal.z)/dimX) + (((j+0.5)*vertical.z)/dimY);
+  eye.direction.x = (((i+0.5)*horizontal.x)/dimX) + (((j+0.5)*vertical.x)/dimY) - eye.origin.x;
+  eye.direction.y = (((i+0.5)*horizontal.y)/dimX) + (((j+0.5)*vertical.y)/dimY) - eye.origin.y;
+  eye.direction.z = (((i+0.5)*horizontal.z)/dimX) + (((j+0.5)*vertical.z)/dimY) - eye.origin.z;
 }
 /** Setup the dimensions of the bounding box **/
 void defineBox()
@@ -255,6 +258,11 @@ void parseFile(char* filename)
     infile >> binaryFile;
     infile >> x >> y >> z;
     infile >> step_size;
+    infile >> ka;
+    infile >> kd;
+    infile >> ks;
+    infile >> init_I;
+    infile >> light.x >> light.y >> light.z;
 
     horizontal = Vector(x-1,0,0);
     vertical = Vector(0,y-1,0);
@@ -321,7 +329,6 @@ int main(int argc, char** argv)
   readBinaryFile(&img);
   defineBox();
 
-
   // iterate through each pixel in output image
   for (int j=0; j<dimY; j++)
   {
@@ -336,20 +343,25 @@ int main(int argc, char** argv)
 	t[k] = ray_plane_intersection(bbox.face[k]);
 
       // min & max possible t for intersections between bounding box & eye ray
-      double min_t(99999.09), max_t(-1);
+      double min_t(-1), max_t(-1);
 
       for (int k=0; k<6; k++)
       {
-	if (t[k] < min_t)
+	if ((t[k] < min_t || min_t == -1) && t[k] != -1)
 	  min_t = t[k];
 
-	if (max_t > t[k])
+	if (t[k] > max_t && t[k] != -1)
 	  max_t = t[k];
       }
 
       delete[] t;
 
-      cout << "At (" << i << ", " << j << "): " << min_t << "\t" << max_t << endl;
+      cout << "At (" << i << ", " << j << "):\t" << min_t << "\t" << max_t << endl;
+
+      if (min_t != -1 && max_t != -1)
+      {
+	front_to_back_compositing(min_t, max_t);
+      }
     }
   }
 
