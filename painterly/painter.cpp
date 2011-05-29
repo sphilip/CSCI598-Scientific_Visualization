@@ -17,7 +17,7 @@ int maxColor; // max color used in image
 
 void read_input(char* file)
 {
-  ifstream infile(file, ios::in);
+  /*ifstream infile(file, ios::in);
 
   if (!infile)
   {
@@ -44,7 +44,32 @@ void read_input(char* file)
     }
   }
   infile.close();
+*/
+  ifstream infile(file, ios::in | ios::binary);
 
+  infile.seekg(0, ios_base::end);
+  int size = infile.tellg();
+  infile.seekg(0, ios_base::beg);
+
+  char* buffer = new char [size];
+  infile.read(buffer, size);
+  infile.close();
+
+  //int* img_rgb;
+//   bool gotDim = false;
+
+  for (int i=0; i<size; i++)
+  {
+    if (isalpha(buffer[i]) != 0)
+      cout << (char) buffer[i] << "\t";
+
+    else if (isdigit(buffer[i]) !=0)
+      cout << (int) buffer[i] << "\t";
+
+    cout << endl;
+  }
+
+  /*
   for (int j=0; j<inY; j++)
   {
     for (int i=0; i<inX; i++)
@@ -52,6 +77,7 @@ void read_input(char* file)
       cout << source.rgb[j*inX+i].r << "\t" << source.rgb[j*inX+i].g << "\t" << source.rgb[j*dimX+i].b << endl;
     }
   }
+  */
 }
 
 int main(int argc, char* argv[])
