@@ -17,67 +17,83 @@ int maxColor; // max color used in image
 
 void read_input(char* file)
 {
-  /*ifstream infile(file, ios::in);
-
+  ifstream infile(file, ios::in | ios::binary);
   if (!infile)
   {
     cout << "Unable to open file " << file << endl;
     return;
   }
 
-  char* code = new char[1024];
-  char* comment = new char[1024];
-  infile >> code;
-  infile >> comment;
-  infile >> inX >> inY;
-  infile >> maxColor;
+  char* buffer = new char[256];
 
+  // skip code
+  infile.getline(buffer,256);
 
-  source = image(inX, inY);
-  for (int j=0; j<inY; j++)
-  {
-    RGB pixel;
-    for (int i=0; i<inX; i++)
-    {
-      infile >> pixel.r >> pixel.g >> pixel.b;
-      source.rgb[j*inX+i] = pixel;
-    }
-  }
-  infile.close();
-*/
-  ifstream infile(file, ios::in | ios::binary);
+  // skip over comments
+  while ((char) infile.peek() == '#')
+    infile.getline(buffer,256);
 
+  delete[] buffer;
+
+  infile >> inX >> inY; // grab image dimensions
+  infile >> maxColor;  // grab max color
+
+  source = image(inX,inY); // construct image
+
+  // find size of image
+  int start = infile.tellg();
   infile.seekg(0, ios_base::end);
-  int size = infile.tellg();
-  infile.seekg(0, ios_base::beg);
+  int end = infile.tellg();
+  int size = end-start;
 
-  char* buffer = new char [size];
-  infile.read(buffer, size);
+  // make sure that the number of pixels in file matches the dimensions
+  if (inX*inY != size/3)
+  {
+    cout << "Dimensions of image doesn't match the number of pixels available" << endl;
+    return;
+  }
+
+  RGB pixel;
+//   RGB* img = new RGB[size/3];
+  char r,g,b;
+  int j=0;
+
+  infile.seekg(start+1,ios_base::beg);
+  for (int i=0; i<size; i=i+3)
+  {
+    // read RGB values
+    infile.readsome(&r,sizeof(char));
+    infile.readsome(&g,sizeof(char));
+    infile.readsome(&b,sizeof(char));
+
+    // add 255 to pixel values below 0
+    if ((int) r < 0)
+      pixel.r = (int) r + maxColor;
+
+    else
+      pixel.r = (int) r;
+
+    if ((int) g < 0)
+      pixel.g = (int) g + maxColor;
+
+    else
+      pixel.g = (int) g;
+
+    if ((int) b < 0)
+      pixel.b = (int) b + maxColor;
+
+    else
+      pixel.b = (int) b;
+
+    source.rgb[j] = pixel;
+    j++;
+    infile.sync();
+  }
+
   infile.close();
+//   delete[] img;
 
-  //int* img_rgb;
-//   bool gotDim = false;
-
-  for (int i=0; i<size; i++)
-  {
-    if (isalpha(buffer[i]) != 0)
-      cout << (char) buffer[i] << "\t";
-
-    else if (isdigit(buffer[i]) !=0)
-      cout << (int) buffer[i] << "\t";
-
-    cout << endl;
-  }
-
-  /*
-  for (int j=0; j<inY; j++)
-  {
-    for (int i=0; i<inX; i++)
-    {
-      cout << source.rgb[j*inX+i].r << "\t" << source.rgb[j*inX+i].g << "\t" << source.rgb[j*dimX+i].b << endl;
-    }
-  }
-  */
+  return;
 }
 
 int main(int argc, char* argv[])
@@ -104,7 +120,9 @@ int main(int argc, char* argv[])
 
   //dimX = atoi(argv[2]);
   //dimY = atoi(argv[3]);
+
   read_input(argv[1]);
+  source.save_to_ppm_file(outputFile.c_str());
 
   return 0;
 }
