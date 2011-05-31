@@ -9,6 +9,7 @@ image::image ()
 {
   xsize = 0;
   ysize = 0;
+  printf("WARNING: no size for rgb array\n");
 }
 
 image::image ( int m, int n ) : xsize(m), ysize(n)
