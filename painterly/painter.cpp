@@ -2,6 +2,7 @@
 #include <cstring>
 #include <fstream>
 #include <cstdlib>
+#include <vector>
 
 #include "image.h"
 
@@ -53,7 +54,15 @@ void read_input(char* file)
     return;
   }
 
+
   RGB pixel;
+  pixel.r = 0;
+  pixel.g = 0;
+  pixel.b = 0;
+
+  vector<RGB> src;
+  src.resize(inX*inY,pixel);
+
 //   RGB* img = new RGB[size/3];
   char r,g,b;
   int j=0;
@@ -67,27 +76,37 @@ void read_input(char* file)
     infile.readsome(&b,sizeof(char));
 
     // add 255 to pixel values below 0
-    if ((int) r < 0)
-      pixel.r = (int) r + maxColor;
+    if ((double) r < 0)
+      pixel.r = (double) r + maxColor;
 
     else
-      pixel.r = (int) r;
+      pixel.r = (double) r;
 
-    if ((int) g < 0)
-      pixel.g = (int) g + maxColor;
-
-    else
-      pixel.g = (int) g;
-
-    if ((int) b < 0)
-      pixel.b = (int) b + maxColor;
+    if ((double) g < 0)
+      pixel.g = (double) g + maxColor;
 
     else
-      pixel.b = (int) b;
+      pixel.g = (double) g;
 
-    source.rgb[j] = pixel;
+    if ((double) b < 0)
+      pixel.b = (double) b + maxColor;
+
+    else
+      pixel.b = (double) b;
+
+    //     source.rgb[j] = pixel;
+    src[i/3] = pixel;
+
+    pixel.r=0;
+    pixel.g=0;
+    pixel.b=0;
     j++;
-    infile.sync();
+    //infile.sync();
+  }
+
+  for (unsigned int i=0; i<src.size(); i++)
+  {
+    cout << "at " << i << "\t" << src[i].r << "\t" << src[i].g << "\t" << src[i].b << endl;
   }
 
   infile.close();
