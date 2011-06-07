@@ -14,12 +14,12 @@ class RGB
       b*=s;
     }
 
-    RGB& operator= (const RGB newColor)
+    const void operator= (const RGB newColor)
     {
       this->r = newColor.r;
       this->g = newColor.g;
       this->b = newColor.b;
 
-      return *this;
+      //return *this;
     }
 };
