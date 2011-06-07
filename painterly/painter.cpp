@@ -54,64 +54,34 @@ void read_input(char* file)
     return;
   }
 
-
   RGB pixel;
   pixel.r = 0;
   pixel.g = 0;
   pixel.b = 0;
 
-  vector<RGB> src;
-  src.resize(inX*inY,pixel);
+//   vector<RGB> src;
+//   src.resize(inX*inY*3,pixel);
 
-//   RGB* img = new RGB[size/3];
-  char r,g,b;
-  int j=0;
+  RGB* img = new RGB[size/3];
+  unsigned char x;
 
-  infile.seekg(start+1,ios_base::beg);
-  for (int i=0; i<size; i=i+3)
+  infile.seekg(start+1, ios_base::beg);
+  for (int i=0;i<size;i+=3)
   {
-    // read RGB values
-    infile.readsome(&r,sizeof(char));
-    infile.readsome(&g,sizeof(char));
-    infile.readsome(&b,sizeof(char));
+    infile.read((char*) &x,sizeof(char));
+    pixel.r = (unsigned int) x;
 
-    // add 255 to pixel values below 0
-    if ((double) r < 0)
-      pixel.r = (double) r + maxColor;
+    infile.read((char*) &x,sizeof(char));
+    pixel.g = (unsigned int) x;
 
-    else
-      pixel.r = (double) r;
-
-    if ((double) g < 0)
-      pixel.g = (double) g + maxColor;
-
-    else
-      pixel.g = (double) g;
-
-    if ((double) b < 0)
-      pixel.b = (double) b + maxColor;
-
-    else
-      pixel.b = (double) b;
-
-    //     source.rgb[j] = pixel;
-    src[i/3] = pixel;
-
-    pixel.r=0;
-    pixel.g=0;
-    pixel.b=0;
-    j++;
-    //infile.sync();
+    infile.read((char*) &x,sizeof(char));
+    pixel.b = (unsigned int) x;
+    //   src[i/3] = pixel;
+    img[i/3] = pixel;
   }
 
-  for (unsigned int i=0; i<src.size(); i++)
-  {
-    cout << "at " << i << "\t" << src[i].r << "\t" << src[i].g << "\t" << src[i].b << endl;
-  }
-
+  source.rgb = img;
   infile.close();
-//   delete[] img;
-
   return;
 }
 
