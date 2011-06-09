@@ -37,7 +37,7 @@ struct Ray
 
 /** Global Variables **/
 string binaryFile; // name of raw file
-double x,y,z; // dimensions of raw file
+int inX,inY,inZ; // dimensions of raw file
 int dimX, dimY;  // dimensions of output file
 int* map = NULL; // holds the pixel values of image
 
@@ -49,8 +49,84 @@ Ray eye; // eye ray has origin @ center of cube and scans the entire cube (hence
 int step_size; //  the distance between voxels to render the output image
 double ka,kd,ks; // coefficients for calculating illumination
 double init_I; // initial intensity
-double alpha_i // initial opacity
+double alpha_i; // initial opacity
 Vector light; // location of light source
+double sigma; // slab of samples that light must travel through
+double isovalue;
+
+/** Find trilinear interpolation based off of given values
+   e=> x-----x <=f
+      /|    /|
+ a=> x-----x <=b
+  g=>| x---|-x <=h
+     |/    |/
+ c=> x-----x <=d **/
+double trilinear_interpolation(double x_val, double y_val, double z_val)
+{
+  int index  = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
+  int a_val = map[index];
+
+  index = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
+
+  int b_val = map[index];
+
+  index = floor(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
+  int c_val = map[index];
+
+  index = ceil(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
+  int d_val = map[index];
+
+  index = floor(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
+  int e_val = map[index];
+
+  index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
+  int f_val = map[index];
+
+  index = floor(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
+  int g_val = map[index];
+
+  index = ceil(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
+  int h_val = map[index];
+
+
+  double weight_x = ceil(x_val) - x_val;
+  double ab_contrib = weight_x*a_val + (1-weight_x*b_val);
+  double cd_contrib = weight_x*c_val + (1-weight_x*d_val);
+  double ef_contrib = weight_x*e_val + (1-weight_x*f_val);
+  double gh_contrib = weight_x*g_val + (1-weight_x*h_val);
+
+  double weight_y = ceil(y_val) - y_val;
+  double abcd_contrib = weight_y*ab_contrib + (1-weight_y*cd_contrib);
+
+  double efgh_contrib = weight_y*ef_contrib + (1-weight_y*gh_contrib);
+
+  double weight_z = ceil(z_val) - z_val;
+  return weight_z*abcd_contrib + (1-weight_z)*efgh_contrib;
+
+}
+/** Calculate transfer function (ie. pts on surface containing similar values) **/
+double transfer_function(Vector& pt)
+{
+  double h=0.005;
+  Vector gradient;
+
+  gradient.x = (trilinear_interpolation(pt.x+h,pt.y,pt.z) - trilinear_interpolation(pt.x-h,pt.y,pt.z))/(2*h);
+  gradient.y = (trilinear_interpolation(pt.x, pt.y+h, pt.z) - trilinear_interpolation(pt.x,pt.y-h, pt.z))/(2*h);
+  gradient.z = (trilinear_interpolation(pt.x, pt.y, pt.z+h) - trilinear_interpolation(pt.x, pt.y, pt.z-h))/(2*h);
+
+  double current_alpha;
+  double value = abs( trilinear_interpolation(pt.x,pt.y,pt.z) - isovalue)/gradient.magnitude();
+
+  if (value < sigma)
+  {
+    current_alpha = 1 - (1/sigma) * value;
+  }
+
+  else
+    current_alpha = 0;
+
+  return current_alpha;
+}
 
 
 /** Take samples from min to max t (ie. front to back) and return the total intensity. **/
@@ -62,12 +138,16 @@ double front_to_back_compositing(double mint, double maxt)
   int steps = (maxt - mint)/step_size;
   for (int step=0; step<steps; step++)
   {
-    final_I = final_I + (alpha*init_I);
+//     final_I = final_I + (alpha*init_I);
+    final_I = (exp(-sigma*alpha_i)*init_I) + final_I;
     alpha = alpha*(1-alpha_i);
 
-    cout << alpha << "\t" << final_I << "\t" << steps << endl;
+    step = step + step_size;
   }
-  return;
+
+  cout << alpha << "\t" << final_I << "\t" << steps << endl;
+
+  return final_I;
 }
 /** Find the intersection between the eye ray & a given face of the bounding box **/
 double ray_plane_intersection(Square face)
@@ -118,19 +198,19 @@ void defineBox()
   Square front;
   front.name = "front";
   front.p = Vector(0,0,0); // origin
-  front.q = Vector((x-1),0,0); // along x
-  front.r = Vector(0,(y-1),0); // along y
-  front.s = Vector((x-1),(y-1),0); // along x,y
+  front.q = Vector((inX-1),0,0); // along inX
+  front.r = Vector(0,(inY-1),0); // along inY
+  front.s = Vector((inX-1),(inY-1),0); // along inX,inY
   bbox.face[0] = front;
 
   // back face --
-  //   same thing as front but translated along z
+  //   same thing as front but translated along inZ
   Square back;
   back.name = "back";
-  back.p = Vector(0,0,(z-1)); // origin
-  back.q = Vector((x-1),0,(z-1)); // along x
-  back.r = Vector(0,(y-1),(z-1)); // along y
-  back.s = Vector((x-1),(y-1),(z-1)); // along x,(y-1)
+  back.p = Vector(0,0,(inZ-1)); // origin
+  back.q = Vector((inX-1),0,(inZ-1)); // along inX
+  back.r = Vector(0,(inY-1),(inZ-1)); // along inY
+  back.s = Vector((inX-1),(inY-1),(inZ-1)); // along inX,(inY-1)
   bbox.face[1] = back;
 
   // right face --
@@ -138,10 +218,10 @@ void defineBox()
   //   s of right = s of back
   Square right;
   right.name = "right";
-  right.p = Vector((x-1),0,0); // origin
-  right.q = Vector((x-1),0,(z-1)); // along z
-  right.r = Vector((x-1),(y-1),0); // along y
-  right.s = Vector((x-1),(y-1),(z-1)); // along z,y
+  right.p = Vector((inX-1),0,0); // origin
+  right.q = Vector((inX-1),0,(inZ-1)); // along inZ
+  right.r = Vector((inX-1),(inY-1),0); // along inY
+  right.s = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
   bbox.face[2] = right;
 
   // left face --
@@ -151,10 +231,10 @@ void defineBox()
   //   s of left = r of front
   Square left;
   left.name = "left";
-  left.p = Vector(0,0,(z-1)); // origin
-  left.q = Vector(0,0,0); // along z
-  left.r = Vector(0,(y-1),(z-1)); // along y
-  left.s = Vector(0,(y-1),0); // along z,y
+  left.p = Vector(0,0,(inZ-1)); // origin
+  left.q = Vector(0,0,0); // along inZ
+  left.r = Vector(0,(inY-1),(inZ-1)); // along inY
+  left.s = Vector(0,(inY-1),0); // along inZ,inY
   bbox.face[3] = left;
 
   // top face --
@@ -164,10 +244,10 @@ void defineBox()
   //   s of top = s of back
   Square top;
   top.name = "top";
-  top.p = Vector(0,(y-1),0); // origin
-  top.q = Vector((x-1),(y-1),0); // along z
-  top.r = Vector(0,(y-1),(z-1)); // along y
-  top.s = Vector((x-1),(y-1),(z-1)); // along z,y
+  top.p = Vector(0,(inY-1),0); // origin
+  top.q = Vector((inX-1),(inY-1),0); // along inZ
+  top.r = Vector(0,(inY-1),(inZ-1)); // along inY
+  top.s = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
   bbox.face[4] = top;
 
   // bottom face --
@@ -178,9 +258,9 @@ void defineBox()
   Square bottom;
   bottom.name = "bottom";
   bottom.p = Vector(0,0,0); // origin
-  bottom.q = Vector((x-1),0,0); // along z
-  bottom.r = Vector(0,0,(z-1)); // along y
-  bottom.s = Vector((x-1),0,(z-1)); // along z,y
+  bottom.q = Vector((inX-1),0,0); // along inZ
+  bottom.r = Vector(0,0,(inZ-1)); // along inY
+  bottom.s = Vector((inX-1),0,(inZ-1)); // along inZ,inY
   bbox.face[5] = bottom;
 }
 
@@ -196,7 +276,7 @@ void readBinaryFile(image* img)
 
   else
   {
-    unsigned char* buffer;
+//     unsigned char* buffer;
     int length;
 
     // get length of file:
@@ -205,15 +285,13 @@ void readBinaryFile(image* img)
     rewind(file);
 
     // allocate memory:
-    buffer = new unsigned char [length];
+//     buffer = new unsigned char [length];
     map = new int [length];
 
     // read data as a block:
     fread(map,sizeof(char),length,file);
     fclose(file);
 
-    //     cout << length << "\t" << length/sizeof(int) << endl;
-   // RGB pixel[length];
     for(int i=0; i<length; i++)
     {
       if (map[i] > 255)
@@ -221,21 +299,9 @@ void readBinaryFile(image* img)
 
       if (map[i] < 0)
 	map[i] = 255 + map[i];
-
-      //       cout << map[i] << "\t";
-    /*  if (i%3 == 0)
-	pixel[i].r = map[i];
-
-      else if (i%3 == 1)
-	pixel[i].g = map[i];
-
-      else
-	pixel[i].b = map[i];
-*/
     }
 
-    //img->rgb = pixel;
-    delete[] buffer;
+//     delete[] buffer;
   }
 
   return;
@@ -256,20 +322,25 @@ void parseFile(char* filename)
   else
   {
     infile >> binaryFile;
-    infile >> x >> y >> z;
+    infile >> inX >> inY >> inZ;
     infile >> step_size;
     infile >> ka;
     infile >> kd;
     infile >> ks;
     infile >> init_I;
     infile >> light.x >> light.y >> light.z;
+    infile >> alpha_i;
+    infile >> sigma;
+    infile >> isovalue;
+    infile.close();
 
-    horizontal = Vector(x-1,0,0);
-    vertical = Vector(0,y-1,0);
+    // define screen orientation
+    horizontal = Vector(inX-1,0,0);
+    vertical = Vector(0,inY-1,0);
 
     // define camera position
-    eye.origin = Vector(x/2, y/2, -z/2);
-    infile.close();
+    eye.origin = Vector(inX/2, inY/2, -inZ/2);
+
   }
 
   return;
