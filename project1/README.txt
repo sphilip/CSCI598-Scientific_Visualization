@@ -16,4 +16,6 @@ The input file contains the following information in this order:
   ks -- specular coefficient (amount of light being scattered)
   I -- initial intensity of lightsource
   Lx Ly Lz -- location of light source
-  r alpha0 -- radius of each voxel and initial opacity
+  alpha0 -- initial opacity
+  sigma -- slab of width that light must goes through
+  isovalue - points on the surface which the contain this value
