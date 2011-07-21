@@ -1,7 +1,7 @@
 GCC = g++
 CFLAGS = -O0 -Wall
 LIBS = -lm -ggdb
-SOURCES = raytrace.cpp image.cpp
+SOURCES = raytrace.cpp image.cpp RGB.cpp
 HEADERS = image.h RGB.h Vector.h
 OBJECTS = $(SOURCES:.cpp=.o)
 EXECUTABLE = volume

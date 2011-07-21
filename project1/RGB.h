@@ -5,6 +5,9 @@ class RGB
   public:
     float r,g,b;
 
+    RGB();
+    RGB(float x, float y, float z);
+
     float max() {
       return (r<g ? (g<b ? b : g) : (r<b ? b : r));
     }
@@ -13,4 +16,6 @@ class RGB
       g*=s;
       b*=s;
     }
+
+    const RGB operator+ (const RGB& a) const;
 };
