@@ -46,13 +46,46 @@ Vector horizontal; // which direction is the horizontal pointing
 Vector vertical; // which direction is the vertical pointing
 Ray eye; // eye ray has origin @ center of cube and scans the entire cube (hence, direction changes)
 
-int step_size; //  the distance between voxels to render the output image
+double step_size; //  the distance between voxels to render the output image
 double ka,kd,ks; // coefficients for calculating illumination
-double init_I; // initial intensity
+double I_lightsource; // initial intensity
 double alpha_i; // initial opacity
 Vector light; // location of light source
 double sigma; // slab of samples that light must travel through
 double isovalue;
+
+
+/** Calculate illumination due to diffuse material **/
+RGB diffuse_term(const Vector& pt, Vector& gradient)
+{
+  RGB diffuse(0.0,0.0,0.0);
+  double magn = gradient.magnitude();
+  if (magn == 0)
+    return diffuse;
+
+  Vector pg = cross(pt,gradient);
+  pg = pg.normalize();
+
+  //   return kd*I_lightsource*abs(dot(pg,light));
+  diffuse.r = 255.0*abs(dot(pg,light));
+  diffuse.g = 255.0*abs(dot(pg,light));
+  diffuse.b = 255.0*abs(dot(pg,light));
+
+  return diffuse;
+}
+
+
+/** Find illumination due to specular **/
+double specular_term(const Vector& pt, const Vector& gradient)
+{
+  Vector LV = light + pt;
+  double LV_magn = LV.magnitude();
+  Vector halfway = LV*pow(LV_magn,-1);
+// cout << LV_magn << endl;
+
+//   return ks*I_lightsource*dot(cross(gradient,pt).normalize(), halfway);
+return 1;
+}
 
 /** Find trilinear interpolation based off of given values
    e=> x-----x <=f
@@ -64,48 +97,63 @@ double isovalue;
 double trilinear_interpolation(double x_val, double y_val, double z_val)
 {
   int index  = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-  int a_val = map[index];
+  float a_val = map[index];
 
-  index = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-
-  int b_val = map[index];
+  index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
+  float b_val = map[index];
 
   index = floor(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-  int c_val = map[index];
+  float c_val = map[index];
 
   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-  int d_val = map[index];
+  float d_val = map[index];
 
   index = floor(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-  int e_val = map[index];
+  float e_val = map[index];
 
   index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-  int f_val = map[index];
+  float f_val = map[index];
 
   index = floor(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-  int g_val = map[index];
+  float g_val = map[index];
 
   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-  int h_val = map[index];
-
+  float h_val = map[index];
 
   double weight_x = ceil(x_val) - x_val;
-  double ab_contrib = weight_x*a_val + (1-weight_x*b_val);
-  double cd_contrib = weight_x*c_val + (1-weight_x*d_val);
-  double ef_contrib = weight_x*e_val + (1-weight_x*f_val);
-  double gh_contrib = weight_x*g_val + (1-weight_x*h_val);
+  double ab_contrib = weight_x*a_val + (1-weight_x)*b_val;
+  double cd_contrib = weight_x*c_val + (1-weight_x)*d_val;
+  double ef_contrib = weight_x*e_val + (1-weight_x)*f_val;
+  double gh_contrib = weight_x*g_val + (1-weight_x)*h_val;
 
   double weight_y = ceil(y_val) - y_val;
-  double abcd_contrib = weight_y*ab_contrib + (1-weight_y*cd_contrib);
+  double abcd_contrib = weight_y*ab_contrib + (1-weight_y)*cd_contrib;
 
-  double efgh_contrib = weight_y*ef_contrib + (1-weight_y*gh_contrib);
+  double efgh_contrib = weight_y*ef_contrib + (1-weight_y)*gh_contrib;
 
   double weight_z = ceil(z_val) - z_val;
   return weight_z*abcd_contrib + (1-weight_z)*efgh_contrib;
 
 }
+
+void test_trilinear()
+{
+  double value = trilinear_interpolation(0.5,0.5,0.5);
+
+  cout << "(0.5,0.5,0.5)= " << value << endl << endl;
+  cout << "(0,0,0)= " << map[0] << endl;
+  cout << "(1,0,0)= " << map[1*inX*inZ] << endl;
+  cout << "(1,1,0)= " << map[1*inX*inZ+1*inY] << endl;
+  cout << "(0,1,0)= " << map[1*inY] << endl;
+
+  cout << "(0,0,1)= " << map[1] << endl;
+  cout << "(1,0,1)= " << map[1*inX*inZ+1] << endl;
+  cout << "(1,1,1)= " << map[1*inX*inZ+1*inY+1] << endl;
+  cout << "(0,1,1)= " << map[1*inY+1] << endl;
+}
+
 /** Calculate transfer function (ie. pts on surface containing similar values) **/
-double transfer_function(Vector& pt)
+double transfer_function(const Vector& pt, Vector& return_gradient)
 {
   double h=0.005;
   Vector gradient;
@@ -125,30 +173,91 @@ double transfer_function(Vector& pt)
   else
     current_alpha = 0;
 
+  return_gradient = gradient;
   return current_alpha;
 }
 
 
-/** Take samples from min to max t (ie. front to back) and return the total intensity. **/
-double front_to_back_compositing(double mint, double maxt)
+void test_transfer()
 {
-  double alpha = 1.0;
-  double final_I = 0.0;
+  Vector test(1,1,1);
+  Vector test_gradient;
+  double value = transfer_function(test, test_gradient);
+  cout << value << endl;
+  return;
+}
 
-  int steps = (maxt - mint)/step_size;
-  for (int step=0; step<steps; step++)
+RGB illumination(const Vector& pt, Vector& gradient)
+{
+  // calculate diffuse
+  RGB diffuse(0.0,0.0,0.0);
+  double magn = gradient.magnitude();
+  if (magn == 0)
+    return diffuse;
+
+  Vector pg = cross(pt,gradient);
+  pg = pg.normalize();
+
+  //   return kd*I_lightsource*abs(dot(pg,light));
+  diffuse.r = 255.0*abs(dot(pg,light));
+  diffuse.g = 255.0*abs(dot(pg,light));
+  diffuse.b = 255.0*abs(dot(pg,light));
+
+  // calculate specular
+  //   RGB specular = specular_term(pt, gradient);
+
+  return diffuse;
+}
+
+
+/** Take samples from min to max t (ie. front to back) and return the total intensity. **/
+RGB front_to_back_compositing(double mint, double maxt)
+{
+  double alpha = alpha_i;
+//   double final_I = 0.0;
+
+//   int steps = (maxt - mint)/step_size;
+  Vector pt, gradient;
+
+  //   double alpha_i;
+  double current_step = mint;
+  RGB intensity = RGB(0.0,0.0,0.0);
+
+  while (current_step < floor(maxt))
+//   for (int step=0; step<steps; step++)
   {
-//     final_I = final_I + (alpha*init_I);
-    final_I = (exp(-sigma*alpha_i)*init_I) + final_I;
-    alpha = alpha*(1-alpha_i);
+    if (alpha <= 0.00001)
+      break;
 
-    step = step + step_size;
+    pt = eye.origin + (eye.direction*current_step);
+    alpha_i = transfer_function(pt, gradient);
+
+    //     final_I = final_I + (alpha*init_I);
+    RGB illuminate = illumination(pt, gradient);
+
+    intensity.r = intensity.r + (current_step*alpha_i*alpha*illuminate.r);
+    intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
+    intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
+
+//     final_I = (exp(-sigma*alpha_i)*init_I) + final_I;
+
+    //     alpha = alpha*(1-alpha_i);
+    alpha = alpha * exp(-current_step*alpha_i);
+
+    current_step +=step_size;
+    //     cout << current_step << endl;
   }
 
-  cout << alpha << "\t" << final_I << "\t" << steps << endl;
+//   cout << alpha << "\t" << final_I << "\t" << steps << endl;
+// RGB illumin;
+// illumin.r = final_I;
+// illumin.g = final_I;
+// illumin.b = final_I;
 
-  return final_I;
+  return intensity;
 }
+
+
 /** Find the intersection between the eye ray & a given face of the bounding box **/
 double ray_plane_intersection(Square face)
 {
@@ -163,7 +272,7 @@ double ray_plane_intersection(Square face)
   double num = dot(po, face.normal);
   double denom = dot(eye.direction, face.normal);
 
-  if (denom == 0)
+  if (denom <= 0)
     return -1;
 
   double t = -(num/denom);
@@ -327,7 +436,7 @@ void parseFile(char* filename)
     infile >> ka;
     infile >> kd;
     infile >> ks;
-    infile >> init_I;
+    infile >> I_lightsource;
     infile >> light.x >> light.y >> light.z;
     infile >> alpha_i;
     infile >> sigma;
@@ -375,7 +484,7 @@ int main(int argc, char** argv)
 {
   if (argc < 3)
   {
-    cout << "To execute, must include the image description file\n\t" << argv[0] << "<image description (must be .txt format)> <dimensions of output image>\n";
+    cout << "To execute, must include the image description file\n\t" << argv[0] << " <image description (must be .txt format)> <dimensions of output image>\n";
     return -1;
   }
 
@@ -427,16 +536,25 @@ int main(int argc, char** argv)
 
       delete[] t;
 
-      cout << "At (" << i << ", " << j << "):\t" << min_t << "\t" << max_t << endl;
+      //       cout << "At (" << i << ", " << j << "):\t" << min_t << "\t" << max_t << endl;
 
+      RGB color;
       if (min_t != -1 && max_t != -1)
       {
-	front_to_back_compositing(min_t, max_t);
+	color = front_to_back_compositing(min_t, max_t);
       }
+
+      else
+	color = RGB(255.0,255.0,255.0);
+
+      img.rgb[j*dimX+i] = color;
     }
   }
 
-//   img.save_to_ppm_file(outputFile.c_str());
+  //   test_trilinear();
+  //   test_transfer();
+
+  img.save_to_ppm_file(outputFile.c_str());
 
   return 0;
 }
