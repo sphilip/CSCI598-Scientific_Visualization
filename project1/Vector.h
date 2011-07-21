@@ -10,7 +10,7 @@ class Vector
     const Vector operator+ (const Vector& b) const;
     const Vector operator- (const Vector& b) const;
     const Vector operator- () const;
-    const Vector operator* (double& x) const;
+    const Vector operator* (const double& x) const;
     Vector operator= (const Vector& b);
     double magnitude ();
     const Vector normalize ();
@@ -65,7 +65,7 @@ const Vector Vector::operator- () const
 }
 
 /** Overloaded operator to scalar mult **/
-const Vector Vector::operator* (double& x) const
+const Vector Vector::operator* (const double& x) const
 {
   Vector c;
   c.x = (this->x * x);
@@ -89,7 +89,8 @@ Vector Vector::operator= (const Vector& b)
 double Vector::magnitude()
 {
   double power = pow(this->x,2) + pow(this->y,2) + pow(this->z,2);
-  return (sqrt(power));
+
+  return sqrt(power);
 }
 
 /** Find normal vector **/
@@ -115,7 +116,7 @@ bool Vector::operator< (const Vector& b)
 
 bool Vector::operator<= (const Vector& b)
 {
-  if (this->x <= b.x || this->y <= b.y || this->z <= b.z)
+  if (this->x <= b.x && this->y <= b.y && this->z <= b.z)
     return true;
 
   else return false;
@@ -132,13 +133,13 @@ bool Vector::operator> (const Vector& b)
 
 bool Vector::operator>= (const Vector& b)
 {
-  if (this->x >= b.x || this->y >= b.y || this->z >= b.z)
+  if (this->x >= b.x && this->y >= b.y && this->z >= b.z)
     return true;
 
   else return false;
 }
 
-/** Calculate cross product from 2 given vectors) **/
+/** Calculate cross product from 2 given vectors **/
 Vector cross(const Vector& a, const Vector& b)
 {
   Vector result;
