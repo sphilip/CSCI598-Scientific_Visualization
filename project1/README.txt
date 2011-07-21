@@ -14,7 +14,7 @@ The input file contains the following information in this order:
   ka -- ambient coefficient (surface property)
   kd -- diffuse coefficient
   ks -- specular coefficient (amount of light being scattered)
-  I -- initial intensity of lightsource
+  I -- intensity of lightsource
   Lx Ly Lz -- location of light source
   alpha0 -- initial opacity
   sigma -- slab of width that light must goes through
