@@ -18,6 +18,7 @@ class Vector
     bool operator<= (const Vector& b);
     bool operator> (const Vector& b);
     bool operator>= (const Vector& b);
+    bool operator== (const Vector& b);
 };
 
 /** Default construct, initialize to 0 **/
@@ -134,6 +135,14 @@ bool Vector::operator> (const Vector& b)
 bool Vector::operator>= (const Vector& b)
 {
   if (this->x >= b.x && this->y >= b.y && this->z >= b.z)
+    return true;
+
+  else return false;
+}
+
+bool Vector::operator== (const Vector& b)
+{
+  if (this->x == b.x && this->y == b.y && this->z == b.z)
     return true;
 
   else return false;
