@@ -1,5 +1,6 @@
 #include "RGB.h"
 
+/** Default constructor **/
 RGB::RGB()
 {
   r=0.0;
@@ -7,6 +8,7 @@ RGB::RGB()
   b=0.0;
 }
 
+/** User-defined constructor **/
 RGB::RGB(float x, float y, float z)
 {
   r=x;
@@ -14,6 +16,7 @@ RGB::RGB(float x, float y, float z)
   g=z;
 }
 
+/** Addition operator to add colors together **/
 const RGB RGB::operator+ (const RGB& a) const
 {
   RGB result;
@@ -22,4 +25,14 @@ const RGB RGB::operator+ (const RGB& a) const
   result.b = (this->b + a.b);
 
   return result;
+}
+
+/** Assignment operator to save colors **/
+RGB RGB::operator= (const RGB& a)
+{
+  this->r = a.r;
+  this->g = a.g;
+  this->b = a.b;
+
+  return *this;
 }

@@ -18,4 +18,5 @@ class RGB
     }
 
     const RGB operator+ (const RGB& a) const;
+    RGB operator= (const RGB& a);
 };
