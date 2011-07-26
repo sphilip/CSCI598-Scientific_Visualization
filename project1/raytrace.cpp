@@ -47,45 +47,45 @@ Vector vertical; // which direction is the vertical pointing
 Ray eye; // eye ray has origin @ center of cube and scans the entire cube (hence, direction changes)
 
 double step_size; //  the distance between voxels to render the output image
-double ka,kd,ks; // coefficients for calculating illumination
+RGB ka,kd,ks; // coefficients for calculating illumination
 double I_lightsource; // initial intensity
-double alpha_i; // initial opacity
-Vector light; // location of light source
+double alpha_v; // initial opacity
+Vector lightsource; // location of light source
 double sigma; // slab of samples that light must travel through
 double isovalue;
 
 
 /** Calculate illumination due to diffuse material **/
-RGB diffuse_term(const Vector& pt, Vector& gradient)
-{
-  RGB diffuse(0.0,0.0,0.0);
-  double magn = gradient.magnitude();
-  if (magn == 0)
-    return diffuse;
-
-  Vector pg = cross(pt,gradient);
-  pg = pg.normalize();
-
-  //   return kd*I_lightsource*abs(dot(pg,light));
-  diffuse.r = 255.0*abs(dot(pg,light));
-  diffuse.g = 255.0*abs(dot(pg,light));
-  diffuse.b = 255.0*abs(dot(pg,light));
-
-  return diffuse;
-}
+// RGB diffuse_term(const Vector& pt, Vector& gradient)
+// {
+//   RGB diffuse(0.0,0.0,0.0);
+//   double magn = gradient.magnitude();
+//   if (magn == 0)
+//     return diffuse;
+//
+//   Vector pg = cross(pt,gradient);
+//   pg = pg.normalize();
+//
+//   //   return kd*I_lightsource*abs(dot(pg,light));
+//   diffuse.r = 255.0*abs(dot(pg,light));
+//   diffuse.g = 255.0*abs(dot(pg,light));
+//   diffuse.b = 255.0*abs(dot(pg,light));
+//
+//   return diffuse;
+// }
 
 
 /** Find illumination due to specular **/
-double specular_term(const Vector& pt, const Vector& gradient)
+/*double specular_term(const Vector& pt, const Vector& gradient)
 {
   Vector LV = light + pt;
   double LV_magn = LV.magnitude();
-  Vector halfway = LV*pow(LV_magn,-1);
+  Vector halfway = LV*pow(LV_magn,-1);*/
 // cout << LV_magn << endl;
 
 //   return ks*I_lightsource*dot(cross(gradient,pt).normalize(), halfway);
-return 1;
-}
+// return 1;
+// }
 
 /** Find trilinear interpolation based off of given values
    e=> x-----x <=f
@@ -152,28 +152,90 @@ void test_trilinear()
   cout << "(0,1,1)= " << map[1*inY+1] << endl;
 }
 
+
+/** Calculate the gradient of a pt **/
+Vector calculate_gradient(const Vector& pt)
+{
+  double h=1.0;
+  Vector gradient;
+
+  // test if new point if out of bounds in x-direction
+  if ( (pt.x-h) >= 0 && (pt.x+h) < inX)
+    gradient.x = (trilinear_interpolation(pt.x+h,pt.y,pt.z) - trilinear_interpolation(pt.x-h,pt.y,pt.z))/(2*h);
+
+  else if ((pt.x-h) < 0)
+    gradient.x = (trilinear_interpolation(pt.x+h,pt.y,pt.z) - trilinear_interpolation(0,pt.y,pt.z))/(2*h);
+
+  else
+    gradient.x = (trilinear_interpolation(inX,pt.y,pt.z) - trilinear_interpolation(pt.x-h,pt.y,pt.z))/(2*h);
+
+  // test if new point if out of bounds in y-direction
+  if ( (pt.y-h) >= 0 && (pt.y+h) < inY)
+    gradient.y = (trilinear_interpolation(pt.x, pt.y+h, pt.z) - trilinear_interpolation(pt.x,pt.y-h, pt.z))/(2*h);
+
+  else if ((pt.y-h) < 0)
+    gradient.y = (trilinear_interpolation(pt.x, pt.y+h, pt.z) - trilinear_interpolation(pt.x,0, pt.z))/(2*h);
+
+  else
+    gradient.y = (trilinear_interpolation(pt.x,inY, pt.z) - trilinear_interpolation(pt.x,pt.y-h, pt.z))/(2*h);
+
+  // test if new point if out of bounds in z-direction
+  if ((pt.z-h) >= 0 && (pt.z+h) < inZ)
+    gradient.z = (trilinear_interpolation(pt.x, pt.y, pt.z+h) - trilinear_interpolation(pt.x, pt.y, pt.z-h))/(2*h);
+
+  else if ((pt.z-h) < 0)
+    gradient.z = (trilinear_interpolation(pt.x, pt.y, pt.z+h) - trilinear_interpolation(pt.x, pt.y, 0))/(2*h);
+
+  else
+    gradient.z = (trilinear_interpolation(pt.x, pt.y, inZ) - trilinear_interpolation(pt.x, pt.y, pt.z-h))/(2*h);
+
+  // make sure components of gradient >= 0
+  if (gradient.x < 0)
+    gradient.x = 0;
+
+  if (gradient.y < 0)
+    gradient.y = 0;
+
+  if (gradient.z < 0)
+    gradient.z = 0;
+
+  return gradient;
+}
+
 /** Calculate transfer function (ie. pts on surface containing similar values) **/
 double transfer_function(const Vector& pt, Vector& return_gradient)
 {
-  double h=0.005;
-  Vector gradient;
+  return_gradient = calculate_gradient(pt);
 
-  gradient.x = (trilinear_interpolation(pt.x+h,pt.y,pt.z) - trilinear_interpolation(pt.x-h,pt.y,pt.z))/(2*h);
-  gradient.y = (trilinear_interpolation(pt.x, pt.y+h, pt.z) - trilinear_interpolation(pt.x,pt.y-h, pt.z))/(2*h);
-  gradient.z = (trilinear_interpolation(pt.x, pt.y, pt.z+h) - trilinear_interpolation(pt.x, pt.y, pt.z-h))/(2*h);
+  double fv = trilinear_interpolation(pt.x,pt.y,pt.z);
+  double num = abs(fv - isovalue);
 
-  double current_alpha;
-  double value = abs( trilinear_interpolation(pt.x,pt.y,pt.z) - isovalue)/gradient.magnitude();
-
-  if (value < sigma)
+  double frac;
+  double denom;
+  if (return_gradient == Vector(0,0,0))
   {
-    current_alpha = 1 - (1/sigma) * value;
+    denom = 0;
+    frac = 0;
   }
 
   else
-    current_alpha = 0;
+  {
+    denom = return_gradient.magnitude();
+    frac = num/denom;
+  }
 
-  return_gradient = gradient;
+  double current_alpha;
+
+  if (denom == 0 && fv == isovalue)
+    current_alpha = 1.0;
+
+  else if (denom > 0 && (isovalue- (sigma*denom)) <= fv && fv <= (isovalue + (sigma*denom)))
+    current_alpha = 1.0 - (frac/sigma);
+
+  else
+    current_alpha = 0.0;
+
+//   return_gradient = gradient;
   return current_alpha;
 }
 
@@ -187,11 +249,11 @@ void test_transfer()
   return;
 }
 
-RGB illumination(const Vector& pt, Vector& gradient)
+RGB illumination(const Vector& pt, Vector& grad)
 {
   // calculate diffuse
   RGB diffuse(0.0,0.0,0.0);
-  double magn = gradient.magnitude();
+  /*double magn = gradient.magnitude();
   if (magn == 0)
     return diffuse;
 
@@ -201,7 +263,23 @@ RGB illumination(const Vector& pt, Vector& gradient)
   //   return kd*I_lightsource*abs(dot(pg,light));
   diffuse.r = 255.0*abs(dot(pg,light));
   diffuse.g = 255.0*abs(dot(pg,light));
-  diffuse.b = 255.0*abs(dot(pg,light));
+  diffuse.b = 255.0*abs(dot(pg,light))*/;
+
+  Vector LVector = lightsource - pt;
+  LVector.normalize();
+
+  Vector normal;
+
+  if (grad == Vector(0,0,0))
+    normal = Vector(0,0,0);
+
+  else
+    normal = grad.normalize();
+
+
+  diffuse.r = I_lightsource * kd.r * abs(dot(normal, LVector));
+  diffuse.g = I_lightsource * kd.g * abs(dot(normal, LVector));
+  diffuse.b = I_lightsource * kd.b * abs(dot(normal, LVector));
 
   // calculate specular
   //   RGB specular = specular_term(pt, gradient);
@@ -213,7 +291,7 @@ RGB illumination(const Vector& pt, Vector& gradient)
 /** Take samples from min to max t (ie. front to back) and return the total intensity. **/
 RGB front_to_back_compositing(double mint, double maxt)
 {
-  double alpha = alpha_i;
+  double alpha = alpha_v;
 //   double final_I = 0.0;
 
 //   int steps = (maxt - mint)/step_size;
@@ -223,14 +301,13 @@ RGB front_to_back_compositing(double mint, double maxt)
   double current_step = mint;
   RGB intensity = RGB(0.0,0.0,0.0);
 
-  while (current_step < floor(maxt))
-//   for (int step=0; step<steps; step++)
-  {
-    if (alpha <= 0.00001)
-      break;
+  pt = eye.origin + (eye.direction*current_step);
 
-    pt = eye.origin + (eye.direction*current_step);
-    alpha_i = transfer_function(pt, gradient);
+//   while (pt >= Vector(0,0,0) && pt < Vector(inX,inY,inZ) && alpha > 0.0001 && current_step < floor(maxt))
+while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ) && (alpha > 0.00001) && (current_step < max_t))
+  {
+
+    float alpha_i = transfer_function(pt, gradient);
 
     //     final_I = final_I + (alpha*init_I);
     RGB illuminate = illumination(pt, gradient);
@@ -272,7 +349,7 @@ double ray_plane_intersection(Square face)
   double num = dot(po, face.normal);
   double denom = dot(eye.direction, face.normal);
 
-  if (denom <= 0)
+  if (denom == 0)
     return -1;
 
   double t = -(num/denom);
@@ -283,7 +360,15 @@ double ray_plane_intersection(Square face)
   else
   {
     Vector pt = eye.origin + (eye.direction*t);
-    if (pt >= face.p && pt <= face.q && pt >= face.r && pt <= face.s)
+    //     if (pt >= face.p && pt <= face.q && pt >= face.r && pt <= face.s)
+    //     if (pt.x >= 0 && pt.x < inX && pt.y >= 0 && pt.y < inY && pt.z >= 0 && pt.z < inZ)
+    if (((pt.z == 0) && (pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY)) ||
+      ((pt.z == inZ) && (pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY)) ||
+      ((pt.x == inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ)) ||
+      ((pt.x == 0) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ)) ||
+      ((pt.y == inY) && (pt.x >= 0 && pt.x < inX) && (pt.z >= 0 && pt.z < inZ)) ||
+      ((pt.y == 0) && (pt.x >= 0 && pt.x < inX) && (pt.z >= 0 && pt.z < inZ)))
+
     {
       return t;
     }
@@ -294,7 +379,7 @@ double ray_plane_intersection(Square face)
 
 
 /** Calculate direction that the eye ray is pointing **/
-void calculateDirection(int i, int j)
+void find_eyeray(int i, int j)
 {
   eye.direction.x = (((i+0.5)*horizontal.x)/dimX) + (((j+0.5)*vertical.x)/dimY) - eye.origin.x;
   eye.direction.y = (((i+0.5)*horizontal.y)/dimX) + (((j+0.5)*vertical.y)/dimY) - eye.origin.y;
@@ -303,73 +388,61 @@ void calculateDirection(int i, int j)
 /** Setup the dimensions of the bounding box **/
 void defineBox()
 {
+
   // front face
   Square front;
   front.name = "front";
-  front.p = Vector(0,0,0); // origin
-  front.q = Vector((inX-1),0,0); // along inX
-  front.r = Vector(0,(inY-1),0); // along inY
-  front.s = Vector((inX-1),(inY-1),0); // along inX,inY
+  front.p = Vector(0,(inY-1),0); // along inY
+  front.q = Vector((inX-1),(inY-1),0); // along inX,inY
+  front.r = Vector(0,0,0); // origin
+  front.s = Vector((inX-1),0,0); // along inX
   bbox.face[0] = front;
 
   // back face --
   //   same thing as front but translated along inZ
   Square back;
   back.name = "back";
-  back.p = Vector(0,0,(inZ-1)); // origin
-  back.q = Vector((inX-1),0,(inZ-1)); // along inX
-  back.r = Vector(0,(inY-1),(inZ-1)); // along inY
-  back.s = Vector((inX-1),(inY-1),(inZ-1)); // along inX,(inY-1)
+  back.p = Vector(0,(inY-1),(inZ-1)); // along inY
+  back.q = Vector((inX-1),(inY-1),(inZ-1)); // along inX,(inY-1)
+  back.r =  Vector(0,0,(inZ-1)); // origin
+  back.s =  Vector((inX-1),0,(inZ-1)); // along inX
   bbox.face[1] = back;
 
   // right face --
-  //   p of right face = q of front;
-  //   s of right = s of back
   Square right;
   right.name = "right";
-  right.p = Vector((inX-1),0,0); // origin
-  right.q = Vector((inX-1),0,(inZ-1)); // along inZ
-  right.r = Vector((inX-1),(inY-1),0); // along inY
-  right.s = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
+  right.p = Vector((inX-1),(inY-1),0); // along inY
+  right.q = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
+  right.r = Vector((inX-1),0,0); // origin
+  right.s = Vector((inX-1),0,(inZ-1)); // along inZ
   bbox.face[2] = right;
 
   // left face --
-  //   p of left face = q of back;
-  //   q of left = p of front
-  //   r of left = s of back
-  //   s of left = r of front
   Square left;
   left.name = "left";
-  left.p = Vector(0,0,(inZ-1)); // origin
-  left.q = Vector(0,0,0); // along inZ
-  left.r = Vector(0,(inY-1),(inZ-1)); // along inY
-  left.s = Vector(0,(inY-1),0); // along inZ,inY
+  left.p = Vector(0,(inY-1),(inZ-1)); // along inY
+  left.q = Vector(0,(inY-1),0); // along inZ,inY
+  left.r = Vector(0,0,(inZ-1)); // origin
+  left.s = Vector(0,0,0); // along inZ
   bbox.face[3] = left;
 
   // top face --
-  //   p of top face = r of front;
-  //   q of top = s of front
-  //   r of top = r of back
-  //   s of top = s of back
   Square top;
   top.name = "top";
-  top.p = Vector(0,(inY-1),0); // origin
-  top.q = Vector((inX-1),(inY-1),0); // along inZ
-  top.r = Vector(0,(inY-1),(inZ-1)); // along inY
-  top.s = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
+  top.p = Vector(0,(inY-1),(inZ-1)); // along inY
+  top.q = Vector((inX-1),(inY-1),(inZ-1)); // along inZ,inY
+  top.r = Vector(0,(inY-1),0); // origin
+  top.s =  Vector((inX-1),(inY-1),0); // along inZ
+
   bbox.face[4] = top;
 
   // bottom face --
-  //   p of bottom face = p of front;
-  //   q of bottom = q of front
-  //   r of bottom = p of back
-  //   s of bottom = q of back
   Square bottom;
   bottom.name = "bottom";
-  bottom.p = Vector(0,0,0); // origin
-  bottom.q = Vector((inX-1),0,0); // along inZ
-  bottom.r = Vector(0,0,(inZ-1)); // along inY
-  bottom.s = Vector((inX-1),0,(inZ-1)); // along inZ,inY
+  bottom.p = Vector(0,0,(inZ-1)); // along inY
+  bottom.q = Vector((inX-1),0,(inZ-1)); // along inZ,inY
+  bottom.r = Vector(0,0,0); // origin
+  bottom.s = Vector((inX-1),0,0); // along inZ
   bbox.face[5] = bottom;
 }
 
@@ -411,6 +484,7 @@ void readBinaryFile(image* img)
     }
 
 //     delete[] buffer;
+
   }
 
   return;
@@ -433,12 +507,12 @@ void parseFile(char* filename)
     infile >> binaryFile;
     infile >> inX >> inY >> inZ;
     infile >> step_size;
-    infile >> ka;
-    infile >> kd;
-    infile >> ks;
+    infile >> ka.r >> ka.g >> ka.b;
+    infile >> kd.r >> kd.g >> kd.b;
+    infile >> ks.r >> ks.g >> ks.b;
     infile >> I_lightsource;
-    infile >> light.x >> light.y >> light.z;
-    infile >> alpha_i;
+    infile >> lightsource.x >> lightsource.y >> lightsource.z;
+    infile >> alpha_v;
     infile >> sigma;
     infile >> isovalue;
     infile.close();
@@ -515,10 +589,10 @@ int main(int argc, char** argv)
     for (int i=0; i<dimX; i++)
     {
       // calculate direction vector of eye ray
-      calculateDirection(i,j);
+      find_eyeray(i,j);
 
       // array of possible t-values
-      double* t = new double[6];
+      double t[6];
       for (int k=0; k<6; k++)
 	t[k] = ray_plane_intersection(bbox.face[k]);
 
@@ -530,16 +604,14 @@ int main(int argc, char** argv)
 	if ((t[k] < min_t || min_t == -1) && t[k] != -1)
 	  min_t = t[k];
 
-	if (t[k] > max_t && t[k] != -1)
+	if ((t[k] > max_t || max_t == -1) && t[k] != -1)
 	  max_t = t[k];
       }
 
-      delete[] t;
-
-      //       cout << "At (" << i << ", " << j << "):\t" << min_t << "\t" << max_t << endl;
+//       delete[] t;
 
       RGB color;
-      if (min_t != -1 && max_t != -1)
+      if (min_t != -1 && max_t != -1 && min_t < max_t)
       {
 	color = front_to_back_compositing(min_t, max_t);
       }
@@ -547,13 +619,14 @@ int main(int argc, char** argv)
       else
 	color = RGB(255.0,255.0,255.0);
 
-      img.rgb[j*dimX+i] = color;
+      RGB pix = img.pixel(i,j);
+      pix = color;
     }
   }
 
   //   test_trilinear();
   //   test_transfer();
-
+  img.scale();
   img.save_to_ppm_file(outputFile.c_str());
 
   return 0;
