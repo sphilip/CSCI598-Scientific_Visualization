@@ -17,5 +17,6 @@ The input file contains the following information in this order:
   I -- intensity of lightsource (0-255)
   Lx Ly Lz -- location of light source
   alpha0 -- initial opacity (0-1)
-  sigma -- slab of width that light must goes through
+  sigma -- max distance between pt and isosurface
+???slab of width that light must goes through???
   isovalue - points on the surface which the contain this value
