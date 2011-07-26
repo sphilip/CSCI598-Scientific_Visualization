@@ -99,9 +99,9 @@ const Vector Vector::normalize()
 {
   Vector result;
   double magnitude = this->magnitude();
-  result.x = this->x*(1/magnitude);
-  result.y = this->y*(1/magnitude);
-  result.z = this->z*(1/magnitude);
+  result.x = this->x/magnitude;
+  result.y = this->y/magnitude;
+  result.z = this->z/magnitude;
 
   return result;
 }
