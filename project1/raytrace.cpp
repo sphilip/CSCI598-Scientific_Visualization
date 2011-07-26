@@ -54,7 +54,7 @@ Vector lightsource; // location of light source
 double sigma; // slab of samples that light must travel through
 double isovalue;
 
-
+Vector gradient;
 /** Calculate illumination due to diffuse material **/
 // RGB diffuse_term(const Vector& pt, Vector& gradient)
 // {
@@ -87,6 +87,15 @@ double isovalue;
 // return 1;
 // }
 
+
+int lookup(float x, float y, float z)
+{
+  int result;
+  result = (z*inX*inY) + y*inZ+ x;
+
+  return result;
+}
+
 /** Find trilinear interpolation based off of given values
    e=> x-----x <=f
       /|    /|
@@ -96,43 +105,74 @@ double isovalue;
  c=> x-----x <=d **/
 double trilinear_interpolation(double x_val, double y_val, double z_val)
 {
-  int index  = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-  float a_val = map[index];
+  float weight_x = ceil(x_val) - x_val;
 
-  index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-  float b_val = map[index];
+  int index_a = lookup(floor(x_val),ceil(y_val),floor(z_val));
+  int index_b = lookup(ceil(x_val), ceil(y_val), floor(z_val));
+  float x_inter_upper_front = weight_x*map[index_a] + (1-weight_x)*map[index_b];
+  //float x_inter_upper_front = weight_x*map[index_b] + (1-weight_x)*map[index_a];
 
-  index = floor(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-  float c_val = map[index];
+  index_a = lookup(floor(x_val), floor(y_val), floor(z_val));
+  index_b = lookup(ceil(x_val), floor(y_val), floor(z_val));
+  float x_inter_lower_front = weight_x*map[index_a] + (1-weight_x)*map[index_b];
+  //float x_inter_lower_front = weight_x*map[index_b] + (1-weight_x)*map[index_a];
 
-  index = ceil(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-  float d_val = map[index];
+  index_a = lookup(floor(x_val), ceil(y_val), ceil(z_val));
+  index_b = lookup(ceil(x_val), ceil(y_val), ceil(z_val));
+  float x_inter_upper_back = weight_x*map[index_a] + (1-weight_x)*map[index_b];
+  //float x_inter_upper_back = weight_x*index_b + (1-weight_x)*map[index_a];
 
-  index = floor(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-  float e_val = map[index];
+  index_a = lookup(floor(x_val), floor(y_val), ceil(z_val));
+  index_b = lookup(ceil(x_val), floor(y_val), ceil(z_val));
+  float x_inter_lower_back = weight_x*map[index_a] + (1-weight_x)*map[index_b];
+  //float x_inter_lower_back = weight_x*index_b + (1-weight_x)*map[index_a];
 
-  index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-  float f_val = map[index];
+  float weight_y = ceil(y_val) - y_val;
+  float y_inter_front = weight_y*x_inter_upper_front + (1-weight_y)*x_inter_lower_front;
+  float y_inter_back = weight_y*x_inter_upper_back + (1-weight_y)*x_inter_lower_back;
 
-  index = floor(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-  float g_val = map[index];
+  float weight_z = ceil(z_val) - z_val;
 
-  index = ceil(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-  float h_val = map[index];
+  return weight_z*y_inter_front + (1-weight_z)*y_inter_back;
 
-  double weight_x = ceil(x_val) - x_val;
-  double ab_contrib = weight_x*a_val + (1-weight_x)*b_val;
-  double cd_contrib = weight_x*c_val + (1-weight_x)*d_val;
-  double ef_contrib = weight_x*e_val + (1-weight_x)*f_val;
-  double gh_contrib = weight_x*g_val + (1-weight_x)*h_val;
 
-  double weight_y = ceil(y_val) - y_val;
-  double abcd_contrib = weight_y*ab_contrib + (1-weight_y)*cd_contrib;
-
-  double efgh_contrib = weight_y*ef_contrib + (1-weight_y)*gh_contrib;
-
-  double weight_z = ceil(z_val) - z_val;
-  return weight_z*abcd_contrib + (1-weight_z)*efgh_contrib;
+//   int index  = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
+//   float a_val = map[index];
+//
+//   index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
+//   float b_val = map[index];
+//
+//   index = floor(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
+//   float c_val = map[index];
+//
+//   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
+//   float d_val = map[index];
+//
+//   index = floor(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
+//   float e_val = map[index];
+//
+//   index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
+//   float f_val = map[index];
+//
+//   index = floor(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
+//   float g_val = map[index];
+//
+//   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
+//   float h_val = map[index];
+//
+//   double weight_x = ceil(x_val) - x_val;
+//   double ab_contrib = weight_x*a_val + (1-weight_x)*b_val;
+//   double cd_contrib = weight_x*c_val + (1-weight_x)*d_val;
+//   double ef_contrib = weight_x*e_val + (1-weight_x)*f_val;
+//   double gh_contrib = weight_x*g_val + (1-weight_x)*h_val;
+//
+//   double weight_y = ceil(y_val) - y_val;
+//   double abcd_contrib = weight_y*ab_contrib + (1-weight_y)*cd_contrib;
+//
+//   double efgh_contrib = weight_y*ef_contrib + (1-weight_y)*gh_contrib;
+//
+//   double weight_z = ceil(z_val) - z_val;
+//   return weight_z*abcd_contrib + (1-weight_z)*efgh_contrib;
 
 }
 
@@ -154,10 +194,9 @@ void test_trilinear()
 
 
 /** Calculate the gradient of a pt **/
-Vector calculate_gradient(const Vector& pt)
+void calculate_gradient(const Vector& pt)
 {
   double h=1.0;
-  Vector gradient;
 
   // test if new point if out of bounds in x-direction
   if ( (pt.x-h) >= 0 && (pt.x+h) < inX)
@@ -199,20 +238,20 @@ Vector calculate_gradient(const Vector& pt)
   if (gradient.z < 0)
     gradient.z = 0;
 
-  return gradient;
+//   gradient = gradient.normalize();
 }
 
 /** Calculate transfer function (ie. pts on surface containing similar values) **/
-double transfer_function(const Vector& pt, Vector& return_gradient)
+double transfer_function(const Vector& pt)
 {
-  return_gradient = calculate_gradient(pt);
+  calculate_gradient(pt);
 
   double fv = trilinear_interpolation(pt.x,pt.y,pt.z);
   double num = abs(fv - isovalue);
 
   double frac;
   double denom;
-  if (return_gradient == Vector(0,0,0))
+  if (gradient == Vector(0,0,0))
   {
     denom = 0;
     frac = 0;
@@ -220,16 +259,16 @@ double transfer_function(const Vector& pt, Vector& return_gradient)
 
   else
   {
-    denom = return_gradient.magnitude();
+    denom = abs(gradient.magnitude());
     frac = num/denom;
   }
 
   double current_alpha;
 
-  if (denom == 0 && fv == isovalue)
+  if (denom == 0 || fv == isovalue)
     current_alpha = 1.0;
 
-  else if (denom > 0 && (isovalue- (sigma*denom)) <= fv && fv <= (isovalue + (sigma*denom)))
+  else if (denom != 0 && frac < sigma)
     current_alpha = 1.0 - (frac/sigma);
 
   else
@@ -243,16 +282,15 @@ double transfer_function(const Vector& pt, Vector& return_gradient)
 void test_transfer()
 {
   Vector test(1,1,1);
-  Vector test_gradient;
-  double value = transfer_function(test, test_gradient);
+  double value = transfer_function(test);
   cout << value << endl;
   return;
 }
 
-RGB illumination(const Vector& pt, Vector& grad)
+RGB illumination(const Vector& pt)
 {
   // calculate diffuse
-  RGB diffuse(0.0,0.0,0.0);
+  RGB diffuse;
   /*double magn = gradient.magnitude();
   if (magn == 0)
     return diffuse;
@@ -266,15 +304,15 @@ RGB illumination(const Vector& pt, Vector& grad)
   diffuse.b = 255.0*abs(dot(pg,light))*/;
 
   Vector LVector = lightsource - pt;
-  LVector.normalize();
+  LVector = LVector.normalize();
 
   Vector normal;
 
-  if (grad == Vector(0,0,0))
+  if (gradient == Vector(0,0,0))
     normal = Vector(0,0,0);
 
   else
-    normal = grad.normalize();
+    normal = gradient.normalize();
 
 
   diffuse.r = I_lightsource * kd.r * abs(dot(normal, LVector));
@@ -295,22 +333,22 @@ RGB front_to_back_compositing(double mint, double maxt)
 //   double final_I = 0.0;
 
 //   int steps = (maxt - mint)/step_size;
-  Vector pt, gradient;
+  Vector pt;
 
   //   double alpha_i;
   double current_step = mint;
-  RGB intensity = RGB(0.0,0.0,0.0);
+  RGB intensity;
 
   pt = eye.origin + (eye.direction*current_step);
 
-//   while (pt >= Vector(0,0,0) && pt < Vector(inX,inY,inZ) && alpha > 0.0001 && current_step < floor(maxt))
-while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ) && (alpha > 0.00001) && (current_step < max_t))
+  //   while (pt >= Vector(0,0,0) && pt < Vector(inX,inY,inZ) && alpha > 0.0001 && current_step < floor(maxt))
+  while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ) && (alpha > 0.00001))
   {
 
-    float alpha_i = transfer_function(pt, gradient);
+    float alpha_i = transfer_function(pt);
 
     //     final_I = final_I + (alpha*init_I);
-    RGB illuminate = illumination(pt, gradient);
+    RGB illuminate = illumination(pt);
 
     intensity.r = intensity.r + (current_step*alpha_i*alpha*illuminate.r);
     intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
@@ -322,6 +360,7 @@ while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && p
     alpha = alpha * exp(-current_step*alpha_i);
 
     current_step +=step_size;
+    pt = eye.origin + (eye.direction*current_step);
     //     cout << current_step << endl;
   }
 
@@ -363,10 +402,10 @@ double ray_plane_intersection(Square face)
     //     if (pt >= face.p && pt <= face.q && pt >= face.r && pt <= face.s)
     //     if (pt.x >= 0 && pt.x < inX && pt.y >= 0 && pt.y < inY && pt.z >= 0 && pt.z < inZ)
     if (((pt.z == 0) && (pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY)) ||
-      ((pt.z == inZ) && (pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY)) ||
-      ((pt.x == inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ)) ||
+      ((pt.z == inZ-1) && (pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY)) ||
+      ((pt.x == inX-1) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ)) ||
       ((pt.x == 0) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ)) ||
-      ((pt.y == inY) && (pt.x >= 0 && pt.x < inX) && (pt.z >= 0 && pt.z < inZ)) ||
+      ((pt.y == inY-1) && (pt.x >= 0 && pt.x < inX) && (pt.z >= 0 && pt.z < inZ)) ||
       ((pt.y == 0) && (pt.x >= 0 && pt.x < inX) && (pt.z >= 0 && pt.z < inZ)))
 
     {
@@ -583,6 +622,7 @@ int main(int argc, char** argv)
   readBinaryFile(&img);
   defineBox();
 
+
   // iterate through each pixel in output image
   for (int j=0; j<dimY; j++)
   {
@@ -611,7 +651,7 @@ int main(int argc, char** argv)
 //       delete[] t;
 
       RGB color;
-      if (min_t != -1 && max_t != -1 && min_t < max_t)
+      if (min_t != -1 && max_t != -1 && min_t <= max_t)
       {
 	color = front_to_back_compositing(min_t, max_t);
       }
