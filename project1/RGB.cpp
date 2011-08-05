@@ -9,15 +9,15 @@ RGB::RGB()
 }
 
 /** User-defined constructor **/
-RGB::RGB(float x, float y, float z)
+RGB::RGB(double x, double y, double z)
 {
-  r=x;
-  b=y;
-  g=z;
+  r = x;
+  b = y;
+  g = z;
 }
 
 /** Addition operator to add colors together **/
-const RGB RGB::operator+ (const RGB& a) const
+RGB RGB::operator+ (  RGB& a)
 {
   RGB result;
   result.r = (this->r + a.r);
@@ -28,11 +28,11 @@ const RGB RGB::operator+ (const RGB& a) const
 }
 
 /** Assignment operator to save colors **/
-RGB RGB::operator= (const RGB& a)
+void RGB::operator= (const RGB& a)
 {
   this->r = a.r;
   this->g = a.g;
   this->b = a.b;
 
-  return *this;
+//   return *this;
 }

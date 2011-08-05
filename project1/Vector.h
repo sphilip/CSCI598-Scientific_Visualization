@@ -7,17 +7,17 @@ class Vector
 
     Vector();
     Vector(double a, double b, double c);
-    const Vector operator+ (const Vector& b) const;
-    const Vector operator- (const Vector& b) const;
-    const Vector operator- () const;
-    const Vector operator* (const double& x) const;
+    Vector operator+ (const Vector& b) ;
+    Vector operator- ( Vector& b) ;
+    Vector operator- () ;
+    Vector operator* (const double& x) ;
     Vector operator= (const Vector& b);
     double magnitude ();
-    const Vector normalize ();
-    bool operator< (const Vector& b);
-    bool operator<= (const Vector& b);
-    bool operator> (const Vector& b);
-    bool operator>= (const Vector& b);
+    Vector normalize ();
+    bool operator< ( Vector& b);
+    bool operator<= ( Vector& b);
+    bool operator> ( Vector& b);
+    bool operator>= ( Vector& b);
     bool operator== (const Vector& b);
 };
 
@@ -38,7 +38,7 @@ Vector::Vector(double a, double b, double c)
 }
 
 /** Overloaded operator to add 2 vectors **/
-const Vector Vector::operator+ (const Vector& b) const
+Vector Vector::operator+ (const Vector& b)
 {
   Vector c;
   c.x = (this->x + b.x);
@@ -49,7 +49,7 @@ const Vector Vector::operator+ (const Vector& b) const
 }
 
 /** Overloaded operator to subtract 2 vectors **/
-const Vector Vector::operator- (const Vector& b) const
+ Vector Vector::operator- ( Vector& b)
 {
   Vector c;
   c.x = (this->x - b.x);
@@ -60,13 +60,13 @@ const Vector Vector::operator- (const Vector& b) const
 }
 
 /** Overloaded operator to negate **/
-const Vector Vector::operator- () const
+ Vector Vector::operator- ()
 {
   return Vector(-this->x,-this->y,-this->z);
 }
 
 /** Overloaded operator to scalar mult **/
-const Vector Vector::operator* (const double& x) const
+ Vector Vector::operator* (const double& x)
 {
   Vector c;
   c.x = (this->x * x);
@@ -95,7 +95,7 @@ double Vector::magnitude()
 }
 
 /** Find normal vector **/
-const Vector Vector::normalize()
+ Vector Vector::normalize()
 {
   Vector result;
   double magnitude = this->magnitude();
@@ -107,7 +107,7 @@ const Vector Vector::normalize()
 }
 
 /** Overloaded inequalities **/
-bool Vector::operator< (const Vector& b)
+bool Vector::operator< ( Vector& b)
 {
   if (this->x < b.x || this->y < b.y || this->z < b.z)
     return true;
@@ -115,7 +115,7 @@ bool Vector::operator< (const Vector& b)
   else return false;
 }
 
-bool Vector::operator<= (const Vector& b)
+bool Vector::operator<= ( Vector& b)
 {
   if (this->x <= b.x && this->y <= b.y && this->z <= b.z)
     return true;
@@ -124,7 +124,7 @@ bool Vector::operator<= (const Vector& b)
 }
 
 
-bool Vector::operator> (const Vector& b)
+bool Vector::operator> ( Vector& b)
 {
   if (this->x > b.x || this->y > b.y || this->z > b.z)
     return true;
@@ -132,7 +132,7 @@ bool Vector::operator> (const Vector& b)
   else return false;
 }
 
-bool Vector::operator>= (const Vector& b)
+bool Vector::operator>= ( Vector& b)
 {
   if (this->x >= b.x && this->y >= b.y && this->z >= b.z)
     return true;
@@ -149,7 +149,7 @@ bool Vector::operator== (const Vector& b)
 }
 
 /** Calculate cross product from 2 given vectors **/
-Vector cross(const Vector& a, const Vector& b)
+Vector cross( Vector& a,  Vector& b)
 {
   Vector result;
   result.x = (a.y * b.z) - (a.z * b.y);
@@ -160,7 +160,7 @@ Vector cross(const Vector& a, const Vector& b)
 }
 
 /** Find dot product **/
-double dot(const Vector& a, const Vector& b)
+double dot( Vector& a,  Vector& b)
 {
   return (a.x*b.x) + (a.y*b.y) + (a.z*b.z);
 }

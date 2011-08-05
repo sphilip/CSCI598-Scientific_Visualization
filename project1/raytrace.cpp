@@ -55,6 +55,9 @@ double sigma; // slab of samples that light must travel through
 double isovalue;
 
 Vector gradient;
+/** End global variables **/
+
+
 /** Calculate illumination due to diffuse material **/
 // RGB diffuse_term(const Vector& pt, Vector& gradient)
 // {
@@ -194,7 +197,7 @@ void test_trilinear()
 
 
 /** Calculate the gradient of a pt **/
-void calculate_gradient(const Vector& pt)
+void calculate_gradient(Vector& pt)
 {
   double h=1.0;
 
@@ -242,7 +245,7 @@ void calculate_gradient(const Vector& pt)
 }
 
 /** Calculate transfer function (ie. pts on surface containing similar values) **/
-double transfer_function(const Vector& pt)
+double transfer_function( Vector& pt)
 {
   calculate_gradient(pt);
 
@@ -287,7 +290,7 @@ void test_transfer()
   return;
 }
 
-RGB illumination(const Vector& pt)
+RGB illumination(Vector& pt)
 {
   // calculate diffuse
   RGB diffuse;
@@ -337,7 +340,7 @@ RGB front_to_back_compositing(double mint, double maxt)
 
   //   double alpha_i;
   double current_step = mint;
-  RGB intensity;
+  RGB intensity(0,0,0);
 
   pt = eye.origin + (eye.direction*current_step);
 
@@ -350,11 +353,18 @@ RGB front_to_back_compositing(double mint, double maxt)
     //     final_I = final_I + (alpha*init_I);
     RGB illuminate = illumination(pt);
 
-    intensity.r = intensity.r + (current_step*alpha_i*alpha*illuminate.r);
-    intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
-    intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
 
-//     final_I = (exp(-sigma*alpha_i)*init_I) + final_I;
+//     intensity.r = intensity.r +  (current_step*alpha_i*alpha*illuminate.r);
+//     intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
+//     intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
+
+intensity.r = current_step*alpha_i*alpha* illuminate.r;
+intensity.g =  current_step*alpha_i*alpha* illuminate.g;
+intensity.b =  current_step*alpha_i*alpha* illuminate.b;
+
+
+
+    //     final_I = (exp(-sigma*alpha_i)*init_I) + final_I;
 
     //     alpha = alpha*(1-alpha_i);
     alpha = alpha * exp(-current_step*alpha_i);
@@ -657,10 +667,16 @@ int main(int argc, char** argv)
       }
 
       else
-	color = RGB(255.0,255.0,255.0);
+      {
+	color.r = 255;
+	color.g = 255;
+	color.b = 255;
+      }
 
       RGB pix = img.pixel(i,j);
-      pix = color;
+      pix.r = color.r;
+      pix.g = color.g;
+      pix.b = color.b;
     }
   }
 
