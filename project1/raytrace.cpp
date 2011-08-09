@@ -55,6 +55,7 @@ double sigma; // slab of samples that light must travel through
 double isovalue;
 
 Vector gradient;
+RGB intensity;
 /** End global variables **/
 
 
@@ -340,7 +341,10 @@ RGB front_to_back_compositing(double mint, double maxt)
 
   //   double alpha_i;
   double current_step = mint;
-  RGB intensity(0,0,0);
+  //   RGB intensity(0,0,0);
+  intensity.r = 0;
+  intensity.g = 0;
+  intensity.b = 0;
 
   pt = eye.origin + (eye.direction*current_step);
 
@@ -354,13 +358,13 @@ RGB front_to_back_compositing(double mint, double maxt)
     RGB illuminate = illumination(pt);
 
 
-//     intensity.r = intensity.r +  (current_step*alpha_i*alpha*illuminate.r);
-//     intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
-//     intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
+    intensity.r = intensity.r +  (current_step*alpha_i*alpha*illuminate.r);
+    intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
+    intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
 
-intensity.r = current_step*alpha_i*alpha* illuminate.r;
-intensity.g =  current_step*alpha_i*alpha* illuminate.g;
-intensity.b =  current_step*alpha_i*alpha* illuminate.b;
+// intensity.r = current_step*alpha_i*alpha* illuminate.r;
+// intensity.g =  current_step*alpha_i*alpha* illuminate.g;
+// intensity.b =  current_step*alpha_i*alpha* illuminate.b;
 
 
 
@@ -638,6 +642,8 @@ int main(int argc, char** argv)
   {
     for (int i=0; i<dimX; i++)
     {
+      RGB &pix = img.pixel(i,j);
+
       // calculate direction vector of eye ray
       find_eyeray(i,j);
 
@@ -673,7 +679,7 @@ int main(int argc, char** argv)
 	color.b = 255;
       }
 
-      RGB pix = img.pixel(i,j);
+
       pix.r = color.r;
       pix.g = color.g;
       pix.b = color.b;
@@ -682,7 +688,7 @@ int main(int argc, char** argv)
 
   //   test_trilinear();
   //   test_transfer();
-  img.scale();
+//   img.scale();
   img.save_to_ppm_file(outputFile.c_str());
 
   return 0;
