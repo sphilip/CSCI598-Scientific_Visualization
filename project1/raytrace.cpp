@@ -95,8 +95,8 @@ RGB intensity;
 int lookup(float x, float y, float z)
 {
   int result;
-  result = (z*inX*inY) + y*inZ+ x;
-
+   result = (z*inX*inY) + y*inZ+ x;
+//  result = pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2);
   return result;
 }
 
@@ -319,9 +319,13 @@ RGB illumination(Vector& pt)
     normal = gradient.normalize();
 
 
-  diffuse.r = I_lightsource * kd.r * abs(dot(normal, LVector));
-  diffuse.g = I_lightsource * kd.g * abs(dot(normal, LVector));
-  diffuse.b = I_lightsource * kd.b * abs(dot(normal, LVector));
+//   diffuse.r = I_lightsource * kd.r * abs(dot(normal, LVector));
+//   diffuse.g = I_lightsource * kd.g * abs(dot(normal, LVector));
+//   diffuse.b = I_lightsource * kd.b * abs(dot(normal, LVector));
+
+  diffuse.r = I_lightsource * abs(dot(normal, LVector));
+  diffuse.g = I_lightsource * abs(dot(normal, LVector));
+  diffuse.b = I_lightsource * abs(dot(normal, LVector));
 
   // calculate specular
   //   RGB specular = specular_term(pt, gradient);
@@ -375,7 +379,7 @@ RGB front_to_back_compositing(double mint, double maxt)
 
     current_step +=step_size;
     pt = eye.origin + (eye.direction*current_step);
-    //     cout << current_step << endl;
+    cout << "alpha= " << alpha << "\t current_step= " << current_step << endl;
   }
 
 //   cout << alpha << "\t" << final_I << "\t" << steps << endl;
