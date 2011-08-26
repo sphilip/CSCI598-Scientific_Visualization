@@ -94,10 +94,12 @@ RGB intensity;
 
 int lookup(float x, float y, float z)
 {
-  int result;
-   result = (z*inX*inY) + y*inZ+ x;
+//   int result;
+//    result = (z*inZ*inX) + y*inZ + x;
 //  result = pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2);
-  return result;
+//   return result;
+// return ((z*inZ*inX) + y*inZ + x);
+return (sqrt(pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2)));
 }
 
 /** Find trilinear interpolation based off of given values
@@ -182,9 +184,9 @@ double trilinear_interpolation(double x_val, double y_val, double z_val)
 
 void test_trilinear()
 {
-  double value = trilinear_interpolation(0.5,0.5,0.5);
+  double value = trilinear_interpolation(0.25,0.25,0.25);
 
-  cout << "(0.5,0.5,0.5)= " << value << endl << endl;
+  cout << "(0.25,0.25,0.25)= " << value << endl << endl;
   cout << "(0,0,0)= " << map[0] << endl;
   cout << "(1,0,0)= " << map[1*inX*inZ] << endl;
   cout << "(1,1,0)= " << map[1*inX*inZ+1*inY] << endl;
