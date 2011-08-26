@@ -98,19 +98,24 @@ int lookup(float x, float y, float z)
 //    result = (z*inZ*inX) + y*inZ + x;
 //  result = pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2);
 //   return result;
-// return ((z*inZ*inX) + y*inZ + x);
-return (sqrt(pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2)));
+return ((z*inZ*inX) + y*inZ + x);
+// return (sqrt(pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2)));
 }
 
 /** Find trilinear interpolation based off of given values
-   e=> x-----x <=f
-      /|    /|
- a=> x-----x <=b
-  g=>| x---|-x <=h
-     |/    |/
- c=> x-----x <=d **/
+ **/
 double trilinear_interpolation(double x_val, double y_val, double z_val)
 {
+  if ( floor(x_val) >= inX || ceil(x_val) >= inX)
+    x_val = inX-1;
+  
+  if ( floor(y_val) >= inY || ceil(y_val) >= inY)
+    y_val = inY-1;
+    
+  if ( floor(z_val) >= inZ || ceil(z_val) >= inZ)
+    z_val = inZ-1;
+  
+  
   float weight_x = ceil(x_val) - x_val;
 
   int index_a = lookup(floor(x_val),ceil(y_val),floor(z_val));
@@ -140,70 +145,47 @@ double trilinear_interpolation(double x_val, double y_val, double z_val)
   float weight_z = ceil(z_val) - z_val;
 
   return weight_z*y_inter_front + (1-weight_z)*y_inter_back;
-
-
-//   int index  = floor(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-//   float a_val = map[index];
-//
-//   index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + floor(z_val);
-//   float b_val = map[index];
-//
-//   index = floor(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-//   float c_val = map[index];
-//
-//   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + floor(z_val);
-//   float d_val = map[index];
-//
-//   index = floor(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-//   float e_val = map[index];
-//
-//   index = ceil(x_val)*inX*inZ + ceil(y_val)*inY + ceil(z_val);
-//   float f_val = map[index];
-//
-//   index = floor(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-//   float g_val = map[index];
-//
-//   index = ceil(x_val)*inX*inZ + floor(y_val)*inY + ceil(z_val);
-//   float h_val = map[index];
-//
-//   double weight_x = ceil(x_val) - x_val;
-//   double ab_contrib = weight_x*a_val + (1-weight_x)*b_val;
-//   double cd_contrib = weight_x*c_val + (1-weight_x)*d_val;
-//   double ef_contrib = weight_x*e_val + (1-weight_x)*f_val;
-//   double gh_contrib = weight_x*g_val + (1-weight_x)*h_val;
-//
-//   double weight_y = ceil(y_val) - y_val;
-//   double abcd_contrib = weight_y*ab_contrib + (1-weight_y)*cd_contrib;
-//
-//   double efgh_contrib = weight_y*ef_contrib + (1-weight_y)*gh_contrib;
-//
-//   double weight_z = ceil(z_val) - z_val;
-//   return weight_z*abcd_contrib + (1-weight_z)*efgh_contrib;
-
-}
-
-void test_trilinear()
-{
-  double value = trilinear_interpolation(0.25,0.25,0.25);
-
-  cout << "(0.25,0.25,0.25)= " << value << endl << endl;
-  cout << "(0,0,0)= " << map[0] << endl;
-  cout << "(1,0,0)= " << map[1*inX*inZ] << endl;
-  cout << "(1,1,0)= " << map[1*inX*inZ+1*inY] << endl;
-  cout << "(0,1,0)= " << map[1*inY] << endl;
-
-  cout << "(0,0,1)= " << map[1] << endl;
-  cout << "(1,0,1)= " << map[1*inX*inZ+1] << endl;
-  cout << "(1,1,1)= " << map[1*inX*inZ+1*inY+1] << endl;
-  cout << "(0,1,1)= " << map[1*inY+1] << endl;
 }
 
 
-/** Calculate the gradient of a pt **/
+/** Calculate the gradient of a pt.  The gradient is a vector pointing in the direction of greater values at the
+    fastest rate given the pts around it (in x,y,z directions)   **/
 void calculate_gradient(Vector& pt)
 {
   double h=1.0;
 
+  /* out of bounds possibility 
+  
+  scenario          soln        
+  pt.x+h < inX      pt.x+h
+  pt.x+h = inX      pt.x
+  pt.x+h > inX      inX-1
+  
+  scenario          soln
+  pt.x-h < 0        0
+  pt.x-h = 0        0
+  pt.x-h > 0        pt.x-h
+  
+  (0,0,0)          (1,1,1)
+  (1,0,0)          (1,1,1) = (2,1,1)
+     (0,0,0)          (1,1,1) --> (0,1,1)
+  (0,1,0)          (1,1,1) = (1,2,1)
+     (0,0,0)          (1,1,1) --> (1,0,1)
+  (0,0,1)          (1,1,1) = (1,1,2)
+     (0,0,0)          (1,1,1) --> (1,1,0)
+     
+  (.5,0,0)        (0,-.5,-.5) is good
+  is good         
+     
+    0 ---- 1
+   /      /| 
+  0 ---- 1 |
+  |      | 1
+  |      |/
+  0 ---- 1   
+  
+  */
+    
   // test if new point if out of bounds in x-direction
   if ( (pt.x-h) >= 0 && (pt.x+h) < inX)
     gradient.x = (trilinear_interpolation(pt.x+h,pt.y,pt.z) - trilinear_interpolation(pt.x-h,pt.y,pt.z))/(2*h);
@@ -235,14 +217,14 @@ void calculate_gradient(Vector& pt)
     gradient.z = (trilinear_interpolation(pt.x, pt.y, inZ) - trilinear_interpolation(pt.x, pt.y, pt.z-h))/(2*h);
 
   // make sure components of gradient >= 0
-  if (gradient.x < 0)
-    gradient.x = 0;
-
-  if (gradient.y < 0)
-    gradient.y = 0;
-
-  if (gradient.z < 0)
-    gradient.z = 0;
+//   if (gradient.x < 0)
+//     gradient.x = 0;
+// 
+//   if (gradient.y < 0)
+//     gradient.y = 0;
+// 
+//   if (gradient.z < 0)
+//     gradient.z = 0;
 
 //   gradient = gradient.normalize();
 }
@@ -284,14 +266,6 @@ double transfer_function( Vector& pt)
   return current_alpha;
 }
 
-
-void test_transfer()
-{
-  Vector test(1,1,1);
-  double value = transfer_function(test);
-  cout << value << endl;
-  return;
-}
 
 RGB illumination(Vector& pt)
 {
@@ -355,16 +329,14 @@ RGB front_to_back_compositing(double mint, double maxt)
   pt = eye.origin + (eye.direction*current_step);
 
   //   while (pt >= Vector(0,0,0) && pt < Vector(inX,inY,inZ) && alpha > 0.0001 && current_step < floor(maxt))
-  while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ) && (alpha > 0.00001))
+  while ((pt.x >= 0 && pt.x < inX) && (pt.y >= 0 && pt.y < inY) && (pt.z >= 0 && pt.z < inZ) && (alpha > 0.00001) && ceil(current_step) <= maxt)
   {
-
     float alpha_i = transfer_function(pt);
 
     //     final_I = final_I + (alpha*init_I);
     RGB illuminate = illumination(pt);
 
-
-    intensity.r = intensity.r +  (current_step*alpha_i*alpha*illuminate.r);
+    intensity.r = intensity.r + (current_step*alpha_i*alpha*illuminate.r);
     intensity.g = intensity.g + (current_step*alpha_i*alpha*illuminate.g);
     intensity.b = intensity.b + (current_step*alpha_i*alpha*illuminate.b);
 
@@ -381,7 +353,7 @@ RGB front_to_back_compositing(double mint, double maxt)
 
     current_step +=step_size;
     pt = eye.origin + (eye.direction*current_step);
-    cout << "alpha= " << alpha << "\t current_step= " << current_step << endl;
+//     cout << "alpha= " << alpha << "\t current_step= " << current_step << endl;
   }
 
 //   cout << alpha << "\t" << final_I << "\t" << steps << endl;
