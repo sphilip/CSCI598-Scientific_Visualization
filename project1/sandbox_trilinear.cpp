@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 
@@ -7,31 +8,54 @@ int lookup(float, float, float);
 double trilinear_interpolation(double,double,double);
 void create_map();
 
-int map[8];
+// int map[8];
+vector<int> map(8,0);
 int inX, inY, inZ;
 
 int main(int argc, char **argv)
 {
   cout << "Testing interpolation!\n";
-  cout << "\tat (0,0,0) = " << trilinear_interpolation(0,0,0) << endl;
-  cout << "\tat (1,0,0) = " << trilinear_interpolation(1,0,0) << endl;
-  cout << "\tat (0,1,0) = " << trilinear_interpolation(0,1,0) << endl;
-  cout << "\tat (1,1,0) = " << trilinear_interpolation(1,1,0) << endl;
-  cout << "\tat (0,0,1) = " << trilinear_interpolation(0,0,1) << endl;
-  cout << "\tat (1,0,1) = " << trilinear_interpolation(1,0,1) << endl;
-  cout << "\tat (0,1,1) = " << trilinear_interpolation(0,1,1) << endl;
-  cout << "\tat (1,1,1) = " << trilinear_interpolation(1,1,1) << endl;
-  
-  
+  create_map();
+//   cout << "\tat (0,0,0) = " << trilinear_interpolation(0,0,0) << endl;
+//   cout << "\tat (1,0,0) = " << trilinear_interpolation(1,0,0) << endl;
+//   cout << "\tat (0,1,0) = " << trilinear_interpolation(0,1,0) << endl;
+//   cout << "\tat (1,1,0) = " << trilinear_interpolation(1,1,0) << endl;
+//   cout << "\tat (0,0,1) = " << trilinear_interpolation(0,0,1) << endl;
+//   cout << "\tat (1,0,1) = " << trilinear_interpolation(1,0,1) << endl;
+//   cout << "\tat (0,1,1) = " << trilinear_interpolation(0,1,1) << endl;
+//   cout << "\tat (1,1,1) = " << trilinear_interpolation(1,1,1) << endl;
+
+// cout << "\tat (.5,.5,.5) = " << trilinear_interpolation(.5,.5,.5) << endl;
+// cout << "\tat (.25,.25,.25) = " << trilinear_interpolation(.25,.25,.25) << endl;
+cout << "\tat (.75,.75,.75) = " << trilinear_interpolation(.75,.75,.75) << endl;
+
+/*
+    12--13--14
+   /       /|
+  0---1---2 |
+  |       | 17
+  3---4---5/|
+  |       | 20
+  6---7---8 |
+  |       | 23
+  |       |/
+  9--10--11
+
+  x len = 3
+  y len = 4
+  z len = 2
+
+  14 = (2,3,1) = 1*2*3 + 3*2 + 2 = 6+6+2
+  */
   return 0;
 }
 
 void create_map()
 {
-  inX = 1;
-  inY = 1;
-  inZ = 1;
-  
+  inX = 2;
+  inY = 2;
+  inZ = 2;
+
   map[0] = 0;
   map[1] = 1;
   map[2] = 0;
@@ -45,7 +69,7 @@ void create_map()
 int lookup(float x, float y, float z)
 {
   int result;
-   result = (z*inX*inY) + y*inZ+ x;
+   result = (z*inX*inZ) + y*inZ+ x;
    cout << "lookup = " << result << endl;
 //  result = pow((x-inX),2) + pow((y-inY),2) + pow((z-inZ),2);
   return result;
