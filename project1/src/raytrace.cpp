@@ -299,9 +299,9 @@ RGB illumination(Vector& pt)
 //   diffuse.g = I_lightsource * kd.g * abs(dot(normal, LVector));
 //   diffuse.b = I_lightsource * kd.b * abs(dot(normal, LVector));
 
-  diffuse.r = I_lightsource * abs(dot(normal, LVector));
-  diffuse.g = I_lightsource * abs(dot(normal, LVector));
-  diffuse.b = I_lightsource * abs(dot(normal, LVector));
+//   diffuse.r = I_lightsource * abs(dot(normal, LVector));
+//   diffuse.g = I_lightsource * abs(dot(normal, LVector));
+//   diffuse.b = I_lightsource * abs(dot(normal, LVector));
 
   // calculate specular
   //   RGB specular = specular_term(pt, gradient);
@@ -375,11 +375,14 @@ double ray_plane_intersection(Square face)
   Vector po = eye.origin - face.p; // p-o
   Vector pq = face.q - face.p;
   Vector pr = face.r - face.p;
-  face.normal = cross(pq, pr).normalize(); // normal faces into cube
+//  face.normal = cross(pq, pr).normalize(); // normal faces into cube
 
-  double num = dot(po, face.normal);
-  double denom = dot(eye.direction, face.normal);
+//   double num = dot(po, face.normal);
+//   double denom = dot(eye.direction, face.normal);
 
+  // temp fix while trying to get cmake to work
+  double denom = -1;
+  double num = -1;
   if (denom == 0)
     return -1;
 

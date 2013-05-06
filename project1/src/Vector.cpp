@@ -1,21 +1,5 @@
 #include "Vector.h"
 
-/** Default construct, initialize to 0 **/
-Vector::Vector()
-{
-  x = 0;
-  y = 0;
-  z = 0;
-}
-
-/** Construct w/  parameter list **/
-Vector::Vector(double a, double b, double c)
-{
-  x = a;
-  y = b;
-  z = c;
-}
-
 /** Overloaded operator to add 2 vectors **/
 Vector Vector::operator+ (const Vector& b)
 {
@@ -128,19 +112,19 @@ bool Vector::operator== (const Vector& b)
 }
 
 /** Calculate cross product from 2 given vectors **/
-Vector cross( Vector& a,  Vector& b)
+Vector Vector::cross(const Vector& b)
 {
   Vector result;
-  result.x = (a.y * b.z) - (a.z * b.y);
-  result.y = (a.z * b.x) - (a.x * b.z);
-  result.z = (a.x * b.y) - (a.y * b.x);
+  result.x = (this->y * b.z) - (this->z * b.y);
+  result.y = (this->z * b.x) - (this->x * b.z);
+  result.z = (this->x * b.y) - (this->y * b.x);
 
   return result;
 }
 
 /** Find dot product **/
-double dot( Vector& a,  Vector& b)
+double Vector::dot(const Vector& b)
 {
-  return (a.x*b.x) + (a.y*b.y) + (a.z*b.z);
+  return (this->x*b.x) + (this->y*b.y) + (this->z*b.z);
 }
 
