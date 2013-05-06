@@ -2,3 +2,5 @@
 */*.gch
 */*.ppm
 */*.o
+*/build
+*.swp
