@@ -18,6 +18,7 @@ set(GTEST_ROOT_INC "${GTEST_ROOT}/include")
 message(status "${GTEST_ROOT}/cmake/internal_utils.cmake)") 
 include(${GTEST_ROOT}/cmake/internal_utils.cmake)
 set(GTEST_HAS_PTHREAD 0)
+set(gtest_disable_pthreads ON)
 config_compiler_and_linker()
 
 include_directories(${GTEST_ROOT_INC} ${GTEST_ROOT})
