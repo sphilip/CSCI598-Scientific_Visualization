@@ -2,5 +2,5 @@
 #include "../src/Vector.h"
 
 TEST(TestingTest, DoesItWork) {
-    ASSERT_TRUE(false);
+    ASSERT_TRUE(true);
 }
