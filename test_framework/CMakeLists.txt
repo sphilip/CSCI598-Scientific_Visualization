@@ -1,17 +1,27 @@
 project(test_framework)
 cmake_minimum_required(VERSION 2.8)
 
-set(GTEST_BUILD "${CMAKE_BINARY_DIR}/gtest-1.6.0")
-file(MAKE_DIRECTORY ${GTEST_BUILD})
+set(GTEST_VERSION "gtest-1.7.0")
+# 1st extract the zip files
+file(
+  GLOB 
+  ZIP_FILES 
+  *.zip
+)
+
+message(STATUS  "Found zipped files: ${ZIP_FILES}")
+
+# create separate directory for gtest
+execute_process(COMMAND unzip ${ZIP_FILES}) 
 
 set(GTEST_OUTPUT "")
 
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${GTEST_BUILD})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${GTEST_BUILD})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${GTEST_BUILD}) 
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${GTEST_ROOT})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${GTEST_ROOT})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${GTEST_ROOT}) 
 
 # compile gtest
-set(GTEST_ROOT "${CMAKE_SOURCE_DIR}/gtest-1.6.0")
+set(GTEST_ROOT "${CMAKE_BINARY_DIR}/${GTEST_VERSION}")
 set(GTEST_ROOT_SRC "${GTEST_ROOT}/src")
 set(GTEST_ROOT_INC "${GTEST_ROOT}/include")
 
@@ -22,7 +32,7 @@ set(gtest_disable_pthreads ON)
 config_compiler_and_linker()
 
 include_directories(${GTEST_ROOT_INC} ${GTEST_ROOT})
-link_directories(${GTEST_BUILD}/src)
+link_directories(${GTEST_ROOT}/src)
 
 cxx_library(gtest "${cxx_strict}" ${GTEST_ROOT_SRC}/gtest-all.cc)
 cxx_library(gtest_main "${cxx_strict}" ${GTEST_ROOT_SRC}/gtest_main.cc)
