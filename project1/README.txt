@@ -4,8 +4,10 @@ Project 1: Volume Rendering
 The purpose of this README is to describe the minor nuances associated with executing this program sucessfully.
 
 To execute the program, type the following commands into the terminal:
+  mkdir build
+  cd build && cmake ../
   make
-  ./volume <input file> <height of output image> <width of output image>
+  project1/src/volume_renderer <input file> <height of output image> <width of output image>
 
 The input file contains the following information in this order:
   RAW image filename -- from http://tc18.liris.cnrs.fr/code_data_set/3D_images.html
